@@ -81,7 +81,7 @@ tab1, tab2, tab3 = st.tabs(["📊 **水质监管部门**", "🏭 **供水公司*
 
 # 侧边栏信息
 with st.sidebar:
-    st.image("💧", width=100)
+    st.write("💧")
     st.markdown("### 系统信息")
     st.markdown("""
     **版本**: 1.0.0  
