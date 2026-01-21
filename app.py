@@ -549,7 +549,7 @@ with tab2:
                       st.markdown(f"#### {cf_title}")
                       cf_df = counterfactuals.cf_examples_list[0].final_cfs_df
                         
-                        if not cf_df.empty:
+                      if not cf_df.empty:
                             # 创建对比表格
                             st.markdown("##### 当前参数 vs 建议参数")
                             
