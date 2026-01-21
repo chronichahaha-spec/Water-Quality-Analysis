@@ -544,10 +544,7 @@ with tab2:
                       counterfactuals = dice_exp.generate_counterfactuals(
                             company_input,
                             total_CFs=5,
-                            desired_class=desired_class,
-                            proximity_weight=1.0,
-                            diversity_weight=1.0,
-                            features_to_vary='all'
+                            desired_class="opposite"
                       )
                         
                         
