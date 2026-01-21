@@ -479,7 +479,7 @@ with tab3:
                 with shap_tab1:
                     st.markdown("#### 各特征贡献度分析")
                     st.markdown('<div class="info-box">显示每个水质参数对最终预测的具体贡献（正向或负向）</div>', unsafe_allow_html=True)
-                    
+                    shap.initjs()
                     force_plot = shap.force_plot(
                         explainer.expected_value[1],
                         user_shap_values[0,:,1],  # 单个样本
