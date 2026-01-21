@@ -480,20 +480,16 @@ with tab3:
                     st.markdown("#### 各特征贡献度分析")
                     st.markdown('<div class="info-box">显示每个水质参数对最终预测的具体贡献（正向或负向）</div>', unsafe_allow_html=True)
                     
-                    # 创建SHAP力图的matplotlib版本
-                    fig_force, ax_force = plt.subplots(figsize=(12, 3))
-                    shap.force_plot(
+                    force_plot = shap.force_plot(
                         explainer.expected_value[1],
-                        user_shap_values[0,:,1],  # 第一个样本的类别1 SHAP值
+                        user_shap_values[0,:,1],  # 单个样本
                         user_input.iloc[0],
                         feature_names=feature_names,
-                        matplotlib=True,
-                        show = False,
-                        text_rotation=15
-                    )
-                    plt.title("水质安全影响因素力分析图", fontsize=12, fontweight='bold')
-                    plt.tight_layout()
-                    st.pyplot(fig_force)
+                        show=False
+                        )
+    
+                   # 在Streamlit中显示HTML
+                   st.components.v1.html(force_plot.html(), height=400, scrolling=True)
                     
                 
                 with shap_tab2:
