@@ -510,45 +510,44 @@ with tab2:
                       st.markdown("### 🔄 DICE优化方案")
                       st.markdown('<div class="warning-box">基于反事实解释(CF)的水质处理优化建议，展示如何调整参数以达到水质安全标准。</div>', unsafe_allow_html=True)
                     
-                      try:
-                        # 使用Dice生成反事实解释
-                        st.info("正在生成反事实优化方案...")
+                      # 使用Dice生成反事实解释
+                      st.info("正在生成反事实优化方案...")
                         
-                        # 创建Dice解释器
-                        from dice_ml import Data, Model, Dice
+                      # 创建Dice解释器
+                      from dice_ml import Data, Model, Dice
                         
-                        # 准备Dice所需的数据对象
-                        dice_data = Data(
+                      # 准备Dice所需的数据对象
+                      dice_data = Data(
                             dataframe=pd.concat([X_test, y_test], axis=1),
                             continuous_features=feature_names,
                             outcome_name='Potability'
-                        )
+                      )
                         
-                        # 创建Dice模型对象
-                        dice_model = Model(model=rf_model, backend='sklearn')
+                      # 创建Dice模型对象
+                      dice_model = Model(model=rf_model, backend='sklearn')
                         
-                        # 创建Dice解释器
-                        dice_exp = Dice(dice_data, dice_model, method='random')
+                      # 创建Dice解释器
+                      dice_exp = Dice(dice_data, dice_model, method='random')
                         
-                        # 生成反事实解释
-                        if prediction2 == 1:
+                      # 生成反事实解释
+                      if prediction2 == 1:
                             # 如果当前是安全的，生成如何可能变得不安全的反事实
                             desired_class = 0
                             cf_title = "风险情景模拟：可能导致水质不达标的参数变化"
-                        else:
+                      else:
                             # 如果当前是不安全的，生成如何变得安全的反事实
                             desired_class = 1
                             cf_title = "优化建议：实现水质达标的参数调整方案"
                         
-                        # 生成反事实
-                        counterfactuals = dice_exp.generate_counterfactuals(
+                      # 生成反事实
+                     counterfactuals = dice_exp.generate_counterfactuals(
                             company_input,
                             total_CFs=5,
                             desired_class=desired_class,
                             proximity_weight=1.0,
                             diversity_weight=1.0,
                             features_to_vary='all'
-                        )
+                      )
                         
                         
     
