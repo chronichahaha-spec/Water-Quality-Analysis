@@ -487,8 +487,6 @@ with tab3:
                         user_shap_values[:,:,1],  # 第一个样本的类别1 SHAP值
                         user_input.iloc[0],
                         feature_names=feature_names,
-                        matplotlib=True,
-                        show=True,
                         text_rotation=15
                     )
                     plt.title("水质安全影响因素力分析图", fontsize=12, fontweight='bold')
