@@ -209,7 +209,7 @@ def load_data_and_train():
         'model': rf_model,
         'explainer': explainer,
         'shap_values': shap_values,
-        'X_test': X_test_sample,
+        'X_test': X_test,
         'X_train': X_train,
         'y_test': y_test,
         'y_pred': y_pred,
