@@ -479,17 +479,22 @@ with tab3:
                 with shap_tab1:
                     st.markdown("#### 各特征贡献度分析")
                     st.markdown('<div class="info-box">显示每个水质参数对最终预测的具体贡献（正向或负向）</div>', unsafe_allow_html=True)
-                    shap.initjs()
-                    force_plot = shap.force_plot(
-                        explainer.expected_value[1],
-                        user_shap_values[0,:,1],  # 单个样本
-                        user_input.iloc[0],
-                        feature_names=feature_names,
-                        show=False
-                        )
-    
-                    # 在Streamlit中显示HTML
-                    st.components.v1.html(force_plot.html(), height=400, scrolling=True)
+                    
+                    fig, ax = plt.subplots(figsize=(12, 8))
+                    
+                    shap.waterfall_plot(
+                    shap.Explanation(
+                      values=user_shap_values[0,:,1],
+                      base_values=explainer.expected_value[1],
+                      data=user_input.iloc[0].values,
+                      feature_names=feature_names
+                    ),
+                    max_display=15,
+                    show=False
+                    )
+                    plt.title("特征贡献度瀑布图", fontsize=14, fontweight='bold')
+                    plt.tight_layout()
+                    st.pyplot(fig)
                     
                 
                 with shap_tab2:
