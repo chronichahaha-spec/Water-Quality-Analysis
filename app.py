@@ -394,21 +394,171 @@ with tab2:
 
 # ==================== 居民界面 (预留) ====================
 with tab3:
-    st.markdown('<div class="section-header">👨‍👩‍👧‍👦 居民用户视角 (开发中)</div>', unsafe_allow_html=True)
-    st.success("""
-    ### 居民友好界面即将推出
+    st.markdown('<div class="section-header">👨‍👩‍👧‍👦 居民用户视角 - 我家水质分析</div>', unsafe_allow_html=True)
     
-    **计划包含的功能：**
-    - 简单易懂的水质报告
-    - 健康影响解释
-    - 家庭用水建议
-    - 水质问题反馈
+    # 居民页面布局分为两列
+    col_input, col_viz = st.columns([1, 2])
     
-    此模块正在开发中，敬请期待！
-    """)
-    st.image("https://via.placeholder.com/800x400?text=Residential+Water+Quality+Report", 
-             caption="居民水质报告示意图")
-
+    with col_input:
+        st.markdown("### 📝 输入水质参数")
+        st.markdown('<div class="info-box">请输入您家的水质检测数据，系统将分析安全性和影响因素。</div>', unsafe_allow_html=True)
+        
+        # 用户输入表单
+        with st.form("water_quality_form"):
+            # 创建9个特征输入框
+            ph_value = st.slider("**ph值 (酸碱度)**", 0.0, 14.0, 7.0, 0.1, 
+                                help="0-14范围，7为中性，6.5-8.5为安全范围")
+            hardness_value = st.slider("**Hardness (硬度 mg/L)**", 47.0, 323.0, 150.0, 1.0,
+                                      help="47-323 mg/L，适中硬度对健康有益")
+            solids_value = st.slider("**Solids (总溶解固体 mg/L)**", 320.0, 61227.0, 20000.0, 100.0,
+                                   help="320-61227 mg/L，反映水中矿物质含量")
+            chloramines_value = st.slider("**Chloramines (氯胺 mg/L)**", 0.35, 13.0, 4.0, 0.1,
+                                        help="0.35-13 mg/L，消毒副产物，应低于4 mg/L")
+            sulfate_value = st.slider("**Sulfate (硫酸盐 mg/L)**", 129.0, 481.0, 250.0, 1.0,
+                                    help="129-481 mg/L，过高可能引起不适")
+            conductivity_value = st.slider("**Conductivity (电导率 μS/cm)**", 181.0, 753.0, 400.0, 1.0,
+                                         help="181-753 μS/cm，反映离子总量")
+            organic_carbon_value = st.slider("**Organic Carbon (有机碳 mg/L)**", 2.2, 28.0, 10.0, 0.1,
+                                           help="2.2-28 mg/L，微生物营养源")
+            trihalomethanes_value = st.slider("**Trihalomethanes (三卤甲烷 μg/L)**", 0.7, 124.0, 50.0, 0.1,
+                                            help="0.7-124 μg/L，潜在致癌物，应低于80 μg/L")
+            turbidity_value = st.slider("**Turbidity (浊度 NTU)**", 1.45, 6.74, 3.0, 0.1,
+                                      help="1.45-6.74 NTU，越低越清澈")
+            
+            # 提交按钮
+            submitted = st.form_submit_button("🔍 分析我家水质", type="primary", use_container_width=True)
+    
+    with col_viz:
+        st.markdown("### 📊 分析结果")
+        
+        if submitted:
+            # 创建输入数据的DataFrame
+            user_input = pd.DataFrame({
+                'ph': [ph_value],
+                'Hardness': [hardness_value],
+                'Solids': [solids_value],
+                'Chloramines': [chloramines_value],
+                'Sulfate': [sulfate_value],
+                'Conductivity': [conductivity_value],
+                'Organic_carbon': [organic_carbon_value],
+                'Trihalomethanes': [trihalomethanes_value],
+                'Turbidity': [turbidity_value]
+            })
+            
+            # 进行预测
+            with st.spinner("正在分析水质..."):
+                # 预测概率和类别
+                proba = rf_model.predict_proba(user_input)[0]
+                prediction = rf_model.predict(user_input)[0]
+                
+                # 计算SHAP值
+                user_shap_values = explainer.shap_values(user_input)
+                
+                # 显示预测结果
+                st.markdown("---")
+                
+                # 创建结果卡片
+                if prediction == 1:
+                    st.success(f"## ✅ 水质安全可饮用")
+                    st.metric("安全概率", f"{proba[1]*100:.1f}%", delta="安全", delta_color="normal")
+                else:
+                    st.error(f"## ⚠️ 水质不推荐饮用")
+                    st.metric("不安全概率", f"{proba[0]*100:.1f}%", delta="风险", delta_color="inverse")
+                
+                # 显示置信度条
+                st.progress(proba[1], text=f"可饮用置信度: {proba[1]*100:.1f}%")
+                
+                st.markdown("---")
+                
+                # SHAP可视化部分
+                st.markdown("### 🔬 影响因素分析")
+                
+                # 创建两个选项卡：力图和决策图
+                shap_tab1, shap_tab2 = st.tabs(["单个特征影响", "决策过程追踪"])
+                
+                with shap_tab1:
+                    st.markdown("#### 各特征贡献度分析")
+                    st.markdown('<div class="info-box">显示每个水质参数对最终预测的具体贡献（正向或负向）</div>', unsafe_allow_html=True)
+                    
+                    # 创建SHAP力图的matplotlib版本
+                    fig_force, ax_force = plt.subplots(figsize=(12, 3))
+                    shap.force_plot(
+                        explainer.expected_value[1],
+                        user_shap_values[1][0],  # 第一个样本的类别1 SHAP值
+                        user_input.iloc[0],
+                        feature_names=feature_names,
+                        matplotlib=True,
+                        show=False,
+                        text_rotation=15
+                    )
+                    plt.title("水质安全影响因素力分析图", fontsize=12, fontweight='bold')
+                    plt.tight_layout()
+                    st.pyplot(fig_force)
+                    
+                    # 显示特征贡献解释
+                    st.markdown("##### 📝 关键指标解读")
+                    
+                    # 获取特征贡献排名
+                    feature_contributions = dict(zip(feature_names, user_shap_values[1][0]))
+                    sorted_features = sorted(feature_contributions.items(), key=lambda x: abs(x[1]), reverse=True)
+                    
+                    # 显示前3个主要影响因素
+                    for i, (feature, contribution) in enumerate(sorted_features[:3]):
+                        col_f1, col_f2 = st.columns([1, 3])
+                        with col_f1:
+                            if contribution > 0:
+                                st.metric(feature, f"+{contribution:.3f}", delta="促进安全")
+                            else:
+                                st.metric(feature, f"{contribution:.3f}", delta="降低安全")
+                        with col_f2:
+                            current_value = user_input[feature].iloc[0]
+                            st.caption(f"当前值: {current_value:.2f}")
+                
+                with shap_tab2:
+                    st.markdown("#### 决策过程可视化")
+                    st.markdown('<div class="info-box">追踪模型从基础预期值到最终预测的决策路径</div>', unsafe_allow_html=True)
+                    
+                    # 创建决策图（使用多个样本对比）
+                    # 首先找到测试集中类似的样本
+                    from sklearn.metrics import pairwise_distances
+                    
+                    # 计算用户输入与测试集的相似度
+                    distances = pairwise_distances(user_input, X_test, metric='euclidean')[0]
+                    similar_indices = np.argsort(distances)[:5]  # 最相似的5个样本
+                    
+                    # 创建决策图
+                    fig_decision, ax_decision = plt.subplots(figsize=(12, 6))
+                    shap.decision_plot(
+                        explainer.expected_value[1],
+                        shap_values[1][similar_indices],  # 使用相似的样本
+                        X_test.iloc[similar_indices],
+                        feature_names=feature_names,
+                        feature_order='importance',
+                        highlight=0,  # 高亮显示用户输入（第一个）
+                        show=False
+                    )
+                    plt.title("决策路径分析（蓝色线为您的数据）", fontsize=12, fontweight='bold')
+                    plt.legend(['您的数据', '类似样本1', '类似样本2', '类似样本3', '类似样本4'])
+                    plt.tight_layout()
+                    st.pyplot(fig_decision)
+                    
+                    # 决策图解读
+                    st.markdown("##### 📈 决策路径说明")
+                    st.markdown("""
+                    - **起始线（灰色）**: 模型的基准预期值
+                    - **蓝色路径**: 您家水质的决策过程
+                    - **其他颜色**: 类似水质的决策路径
+                    - **终点位置**: 最终预测值（越靠右越安全）
+                    """)
+    
+    # 底部信息
+    st.markdown("---")
+    st.markdown("""
+    <div style="text-align: center; color: #666; font-size: 0.9rem;">
+    <p>💧 注意：本分析基于机器学习模型预测，仅供参考。如有健康疑虑，请咨询专业机构。</p>
+    <p>数据更新频率：模型每月更新 | 最后更新：本月</p>
+    </div>
+    """, unsafe_allow_html=True)
 # ==================== 页脚 ====================
 st.markdown("---")
 st.markdown(
