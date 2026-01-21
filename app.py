@@ -484,7 +484,7 @@ with tab3:
                     fig_force, ax_force = plt.subplots(figsize=(12, 3))
                     shap.force_plot(
                         explainer.expected_value[1],
-                        user_shap_values[1][0],  # 第一个样本的类别1 SHAP值
+                        user_shap_values[:,:,1],  # 第一个样本的类别1 SHAP值
                         user_input.iloc[0],
                         feature_names=feature_names,
                         matplotlib=True,
