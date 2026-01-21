@@ -6,3 +6,4 @@ imbalanced-learn
 shap
 matplotlib
 dice-ml
+ipython
