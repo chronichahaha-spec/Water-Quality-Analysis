@@ -499,7 +499,7 @@ with tab3:
                     st.markdown("##### 📝 关键指标解读")
                     
                     # 获取特征贡献排名
-                    feature_contributions = dict(zip(feature_names, user_shap_values[1][0]))
+                    feature_contributions = dict(zip(feature_names, user_shap_values[:,:,0]))
                     sorted_features = sorted(feature_contributions.items(), key=lambda x: abs(x[1]), reverse=True)
                     
                     # 显示前3个主要影响因素
