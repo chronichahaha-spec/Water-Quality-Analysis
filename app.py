@@ -495,61 +495,25 @@ with tab3:
                     plt.tight_layout()
                     st.pyplot(fig_force)
                     
-                    # 显示特征贡献解释
-                    st.markdown("##### 📝 关键指标解读")
-                    
-                    # 获取特征贡献排名
-                    feature_contributions = dict(zip(feature_names, user_shap_values[:,:,0]))
-                    sorted_features = sorted(feature_contributions.items(), key=lambda x: abs(x[1]), reverse=True)
-                    
-                    # 显示前3个主要影响因素
-                    for i, (feature, contribution) in enumerate(sorted_features[:3]):
-                        col_f1, col_f2 = st.columns([1, 3])
-                        with col_f1:
-                            if contribution > 0:
-                                st.metric(feature, f"+{contribution:.3f}", delta="促进安全")
-                            else:
-                                st.metric(feature, f"{contribution:.3f}", delta="降低安全")
-                        with col_f2:
-                            current_value = user_input[feature].iloc[0]
-                            st.caption(f"当前值: {current_value:.2f}")
                 
                 with shap_tab2:
                     st.markdown("#### 决策过程可视化")
-                    st.markdown('<div class="info-box">追踪模型从基础预期值到最终预测的决策路径</div>', unsafe_allow_html=True)
-                    
-                    # 创建决策图（使用多个样本对比）
-                    # 首先找到测试集中类似的样本
-                    from sklearn.metrics import pairwise_distances
-                    
-                    # 计算用户输入与测试集的相似度
-                    distances = pairwise_distances(user_input, X_test, metric='euclidean')[0]
-                    similar_indices = np.argsort(distances)[:5]  # 最相似的5个样本
                     
                     # 创建决策图
                     fig_decision, ax_decision = plt.subplots(figsize=(12, 6))
                     shap.decision_plot(
                         explainer.expected_value[1],
-                        shap_values[1][similar_indices],  # 使用相似的样本
-                        X_test.iloc[similar_indices],
+                        user_shap_values[:,:,1], 
+                        user_input.iloc[0],
                         feature_names=feature_names,
                         feature_order='importance',
                         highlight=0,  # 高亮显示用户输入（第一个）
                         show=False
                     )
-                    plt.title("决策路径分析（蓝色线为您的数据）", fontsize=12, fontweight='bold')
-                    plt.legend(['您的数据', '类似样本1', '类似样本2', '类似样本3', '类似样本4'])
+                    plt.title("决策路径分析", fontsize=12, fontweight='bold')
                     plt.tight_layout()
                     st.pyplot(fig_decision)
                     
-                    # 决策图解读
-                    st.markdown("##### 📈 决策路径说明")
-                    st.markdown("""
-                    - **起始线（灰色）**: 模型的基准预期值
-                    - **蓝色路径**: 您家水质的决策过程
-                    - **其他颜色**: 类似水质的决策路径
-                    - **终点位置**: 最终预测值（越靠右越安全）
-                    """)
     
     # 底部信息
     st.markdown("---")
