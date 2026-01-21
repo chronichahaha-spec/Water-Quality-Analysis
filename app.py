@@ -487,7 +487,7 @@ with tab3:
                         user_shap_values[:,:,1],  # 第一个样本的类别1 SHAP值
                         user_input.iloc[0],
                         feature_names=feature_names,
-                        matplotlib=Trye,
+                        matplotlib=True,
                         show=True,
                         text_rotation=15
                     )
