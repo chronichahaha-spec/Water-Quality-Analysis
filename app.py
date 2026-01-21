@@ -540,7 +540,7 @@ with tab2:
                             cf_title = "优化建议：实现水质达标的参数调整方案"
                         
                       # 生成反事实
-                     counterfactuals = dice_exp.generate_counterfactuals(
+                      counterfactuals = dice_exp.generate_counterfactuals(
                             company_input,
                             total_CFs=5,
                             desired_class=desired_class,
