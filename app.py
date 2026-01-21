@@ -548,31 +548,7 @@ with tab2:
                       )
                       st.markdown(f"#### {cf_title}")
                       cf_df = counterfactuals.cf_examples_list[0].final_cfs_df
-                        
-                      if not cf_df.empty:
-                            # 创建对比表格
-                            st.markdown("##### 当前参数 vs 建议参数")
-                            
-                            # 准备数据
-                            comparison_data = []
-                            for feature in feature_names:
-                                current_val = company_input[feature].iloc[0]
-                                cf_vals = cf_df[feature].tolist()
-                                
-                                # 计算平均值作为建议值
-                                avg_cf = np.mean(cf_vals)
-                                change_percent = ((avg_cf - current_val) / current_val * 100) if current_val != 0 else 0
-                                
-                                comparison_data.append({
-                                    '参数': feature,
-                                    '当前值': f"{current_val:.2f}",
-                                    '建议值': f"{avg_cf:.2f}",
-                                    '变化幅度': f"{change_percent:+.1f}%",
-                                    '建议操作': '增加' if change_percent > 0 else '减少'
-                                })
-                            
-                            comparison_df = pd.DataFrame(comparison_data)
-                            st.dataframe(comparison_df, use_container_width=True)
+                      st.dataframe(cf_df, use_container_width=True)
                        
                         
     
