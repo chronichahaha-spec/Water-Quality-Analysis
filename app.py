@@ -1,0 +1,424 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+import shap
+import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from imblearn.over_sampling import RandomOverSampler
+import warnings
+warnings.filterwarnings('ignore')
+
+# 设置页面配置
+st.set_page_config(
+    page_title="水质安全XAI解释系统",
+    page_icon="💧",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# 自定义CSS样式
+st.markdown("""
+<style>
+    .main-title {
+        text-align: center;
+        color: #1a237e;
+        font-size: 2.8rem;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        border-radius: 10px;
+        border-left: 6px solid #0d47a1;
+    }
+    .role-tab {
+        font-size: 1.2rem !important;
+        font-weight: 600 !important;
+    }
+    .section-header {
+        color: #0d47a1;
+        border-left: 5px solid #2196f3;
+        padding-left: 15px;
+        margin-top: 2.5rem;
+        margin-bottom: 1.5rem;
+        font-size: 1.8rem;
+    }
+    .feature-card {
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border: 1px solid #e0e0e0;
+        transition: all 0.3s ease;
+    }
+    .feature-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    .info-box {
+        background-color: #e8f5e9;
+        border-left: 4px solid #4caf50;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 0 5px 5px 0;
+    }
+    .warning-box {
+        background-color: #fff3e0;
+        border-left: 4px solid #ff9800;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 0 5px 5px 0;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# 应用主标题
+st.markdown('<div class="main-title">💧 水质安全预测模型可解释性(XAI)系统</div>', unsafe_allow_html=True)
+
+# 角色选择 - 使用水平选项卡
+st.markdown("### 请选择您的角色视角：")
+tab1, tab2, tab3 = st.tabs(["📊 **水质监管部门**", "🏭 **供水公司**", "👨‍👩‍👧‍👦 **居民**"])
+
+# 侧边栏信息
+with st.sidebar:
+    st.image("💧", width=100)
+    st.markdown("### 系统信息")
+    st.markdown("""
+    **版本**: 1.0.0  
+    **模型**: Random Forest  
+    **XAI方法**: SHAP  
+    **数据**: Water Potability Dataset
+    """)
+    
+    st.markdown("---")
+    st.markdown("### 使用说明")
+    st.markdown("""
+    1. 选择上方的角色标签
+    2. 查看对应角色的XAI解释
+    3. 展开/收起特征分析部分
+    4. 所有分析基于同一模型
+    """)
+    
+    st.markdown("---")
+    st.markdown("### 特征说明")
+    st.markdown("""
+    - **ph**: 酸碱度 (0-14)
+    - **Hardness**: 硬度 (mg/L)
+    - **Solids**: 总溶解固体 (mg/L)
+    - **Chloramines**: 氯胺 (mg/L)
+    - **Sulfate**: 硫酸盐 (mg/L)
+    - **Conductivity**: 电导率 (μS/cm)
+    - **Organic_carbon**: 有机碳 (mg/L)
+    - **Trihalomethanes**: 三卤甲烷 (μg/L)
+    - **Turbidity**: 浊度 (NTU)
+    """)
+
+# ==================== 数据加载和模型训练函数 ====================
+@st.cache_resource
+def load_data_and_train():
+    """加载数据并训练模型，返回所有必要对象"""
+    
+    # 显示加载进度
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    # 步骤1: 加载数据
+    status_text.text("步骤1/4: 加载数据集...")
+    progress_bar.progress(25)
+    
+    try:
+        # 从data文件夹读取数据
+        df = pd.read_csv("data/water_potability.csv")
+    except FileNotFoundError:
+        st.error("找不到数据文件: data/water_potability.csv")
+        st.stop()
+    
+    # 步骤2: 数据处理
+    status_text.text("步骤2/4: 处理数据...")
+    progress_bar.progress(50)
+    
+    # 处理缺失值
+    for col in ['ph', 'Sulfate', 'Trihalomethanes']:
+        if col in df.columns:
+            df[col] = df[col].fillna(df[col].mean())
+    
+    # 准备特征和目标
+    feature_names = ['ph', 'Hardness', 'Solids', 'Chloramines', 'Sulfate', 
+                     'Conductivity', 'Organic_carbon', 'Trihalomethanes', 'Turbidity']
+    
+    X = df[feature_names].copy()
+    y = df['Potability'].copy()
+    
+    # 步骤3: 训练模型
+    status_text.text("步骤3/4: 训练模型...")
+    progress_bar.progress(75)
+    
+    # 划分训练测试集
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.3, random_state=42, stratify=y
+    )
+    
+    # 处理类别不平衡
+    ros = RandomOverSampler(random_state=42)
+    X_train_resampled, y_train_resampled = ros.fit_resample(X_train, y_train)
+    
+    # 训练随机森林模型
+    rf_model = RandomForestClassifier(
+        n_estimators=100,
+        max_depth=10,
+        min_samples_split=5,
+        min_samples_leaf=2,
+        random_state=42,
+        n_jobs=-1
+    )
+    
+    rf_model.fit(X_train_resampled, y_train_resampled)
+    
+    # 计算模型性能
+    y_pred = rf_model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred, average='macro')
+    recall = recall_score(y_test, y_pred, average='macro')
+    f1 = f1_score(y_test, y_pred, average='macro')
+    
+    # 步骤4: 计算SHAP值
+    status_text.text("步骤4/4: 计算SHAP解释值...")
+    progress_bar.progress(95)
+    
+    # 创建SHAP解释器
+    explainer = shap.TreeExplainer(rf_model)
+    
+    # 计算SHAP值（只计算前200个样本来加速）
+    X_test_sample = X_test.iloc[:200]
+    shap_values = explainer.shap_values(X_test_sample)
+    
+    # 计算SHAP值的标准差
+    shap_std = {}
+    if shap_values is not None and len(shap_values) > 1:
+        shap_class1 = shap_values[1]  # 类别1的SHAP值
+        for i, feature in enumerate(feature_names):
+            shap_std[feature] = np.std(shap_class1[:, i])
+    
+    status_text.text("准备完成!")
+    progress_bar.progress(100)
+    
+    # 清理进度显示
+    progress_bar.empty()
+    status_text.empty()
+    
+    return {
+        'model': rf_model,
+        'explainer': explainer,
+        'shap_values': shap_values,
+        'X_test': X_test_sample,
+        'X_train': X_train,
+        'y_test': y_test,
+        'y_pred': y_pred,
+        'feature_names': feature_names,
+        'shap_std': shap_std,
+        'metrics': {
+            'accuracy': accuracy,
+            'precision': precision,
+            'recall': recall,
+            'f1': f1
+        }
+    }
+
+# ==================== 主应用逻辑 ====================
+
+# 加载数据并训练模型（带缓存）
+with st.spinner('正在初始化模型和计算SHAP值...'):
+    data_dict = load_data_and_train()
+
+# 提取数据
+rf_model = data_dict['model']
+explainer = data_dict['explainer']
+shap_values = data_dict['shap_values']
+X_test = data_dict['X_test']
+feature_names = data_dict['feature_names']
+shap_std = data_dict['shap_std']
+metrics = data_dict['metrics']
+
+# ==================== 监管部门界面 ====================
+with tab1:
+    st.markdown('<div class="section-header">📊 水质监管部门 - XAI分析面板</div>', unsafe_allow_html=True)
+    
+    # 显示模型性能
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("准确率", f"{metrics['accuracy']:.3f}")
+    with col2:
+        st.metric("精确率", f"{metrics['precision']:.3f}")
+    with col3:
+        st.metric("召回率", f"{metrics['recall']:.3f}")
+    with col4:
+        st.metric("F1分数", f"{metrics['f1']:.3f}")
+    
+    st.markdown("---")
+    
+    # 第一部分: SHAP摘要图
+    st.markdown('<div class="section-header">1. 全局特征重要性分析</div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">此图显示各特征对"水质安全"(类别1)预测的平均影响程度，帮助识别关键监管指标。</div>', unsafe_allow_html=True)
+    
+    fig1, ax1 = plt.subplots(figsize=(12, 6))
+    shap.summary_plot(
+        shap_values[1],  # 类别1的SHAP值
+        X_test,
+        feature_names=feature_names,
+        show=False,
+        plot_type="dot"
+    )
+    plt.title("SHAP特征重要性摘要图 (类别1: 水质安全)", fontsize=14, fontweight='bold')
+    plt.tight_layout()
+    st.pyplot(fig1)
+    
+    # 第二部分: SHAP值标准差分布
+    st.markdown('<div class="section-header">2. 风险波动分析 - SHAP值标准差分布</div>', unsafe_allow_html=True)
+    st.markdown('<div class="warning-box">标准差越大，表示该特征在不同样本中的影响波动越大，监管时需要特别关注其变化范围。</div>', unsafe_allow_html=True)
+    
+    fig2, ax2 = plt.subplots(figsize=(12, 6))
+    features = list(shap_std.keys())
+    std_values = list(shap_std.values())
+    
+    # 排序以便更好地展示
+    sorted_indices = np.argsort(std_values)[::-1]
+    features_sorted = [features[i] for i in sorted_indices]
+    values_sorted = [std_values[i] for i in sorted_indices]
+    
+    colors = plt.cm.Blues(np.linspace(0.4, 0.9, len(features_sorted)))
+    bars = ax2.barh(features_sorted, values_sorted, color=colors)
+    
+    # 添加数值标签
+    for bar, value in zip(bars, values_sorted):
+        width = bar.get_width()
+        ax2.text(width + 0.002, bar.get_y() + bar.get_height()/2,
+                f'{value:.4f}', ha='left', va='center')
+    
+    ax2.set_xlabel('SHAP值标准差', fontsize=12)
+    ax2.set_title('各特征SHAP值波动程度 (类别1)', fontsize=14, fontweight='bold')
+    ax2.grid(axis='x', alpha=0.3, linestyle='--')
+    plt.tight_layout()
+    st.pyplot(fig2)
+    
+    # 第三部分: 特征依赖关系分析 (可折叠分栏)
+    st.markdown('<div class="section-header">3. 详细特征依赖关系分析</div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">点击展开查看每个特征如何影响水质安全预测，了解特征的边际效应。</div>', unsafe_allow_html=True)
+    
+    # 添加全部展开/收起按钮
+    col_expand1, col_expand2 = st.columns(2)
+    with col_expand1:
+        if st.button("🔼 全部收起", use_container_width=True):
+            st.session_state.expand_all = False
+    with col_expand2:
+        if st.button("🔽 全部展开", use_container_width=True):
+            st.session_state.expand_all = True
+    
+    # 初始化session state
+    if 'expand_all' not in st.session_state:
+        st.session_state.expand_all = False
+    
+    # 9个特征的依赖图
+    feature_descriptions = {
+        'ph': '酸碱度是水质的基本指标，影响水处理效果和管道腐蚀。',
+        'Hardness': '硬度主要反映钙镁离子含量，过高会导致结垢问题。',
+        'Solids': '总溶解固体反映水中矿物质含量，影响口感和健康。',
+        'Chloramines': '消毒副产物，浓度需严格控制以保障安全。',
+        'Sulfate': '硫酸盐过高可能引起肠胃不适，需监测控制。',
+        'Conductivity': '电导率反映水中离子总量，间接指示污染程度。',
+        'Organic_carbon': '有机碳是微生物的营养源，过高可能滋生细菌。',
+        'Trihalomethanes': '重要消毒副产物，有潜在致癌风险。',
+        'Turbidity': '浊度反映水中悬浮物含量，影响消毒效果。'
+    }
+    
+    # 为每个特征创建可折叠分栏
+    for i, feature in enumerate(feature_names):
+        with st.expander(f"**{feature}** - {feature_descriptions.get(feature, '')}", 
+                        expanded=st.session_state.expand_all):
+            
+            st.markdown(f'<div class="feature-card">', unsafe_allow_html=True)
+            
+            # 创建两列布局
+            col_left, col_right = st.columns([2, 1])
+            
+            with col_left:
+                # 生成依赖图
+                fig_dep, ax_dep = plt.subplots(figsize=(8, 4))
+                shap.dependence_plot(
+                    feature,
+                    shap_values[1],
+                    X_test,
+                    feature_names=feature_names,
+                    ax=ax_dep,
+                    show=False
+                )
+                ax_dep.set_title(f'{feature} SHAP依赖图', fontsize=12, fontweight='bold')
+                ax_dep.set_xlabel(feature, fontsize=10)
+                ax_dep.set_ylabel('SHAP值 (对类别1的影响)', fontsize=10)
+                plt.tight_layout()
+                st.pyplot(fig_dep)
+            
+            with col_right:
+                # 显示特征统计信息
+                st.markdown("##### 特征统计")
+                st.write(f"**均值**: {X_test[feature].mean():.2f}")
+                st.write(f"**标准差**: {X_test[feature].std():.2f}")
+                st.write(f"**范围**: [{X_test[feature].min():.2f}, {X_test[feature].max():.2f}]")
+                st.write(f"**SHAP波动**: {shap_std.get(feature, 0):.4f}")
+                
+                # 监管建议
+                st.markdown("##### 监管建议")
+                if feature in ['Trihalomethanes', 'Chloramines']:
+                    st.info("需严格监控，定期检测")
+                elif feature in ['ph', 'Turbidity']:
+                    st.warning("需保持稳定，避免波动")
+                else:
+                    st.success("常规监测指标")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+
+# ==================== 供水公司界面 (预留) ====================
+with tab2:
+    st.markdown('<div class="section-header">🏭 供水公司视角 (开发中)</div>', unsafe_allow_html=True)
+    st.info("""
+    ### 供水公司功能即将上线
+    
+    **计划包含的功能：**
+    - 工艺参数优化建议
+    - 成本效益分析
+    - 实时水质监控
+    - 处理效率分析
+    
+    此模块正在开发中，敬请期待！
+    """)
+    st.image("https://via.placeholder.com/800x400?text=Water+Treatment+Plant+Dashboard", 
+             caption="供水公司运营面板示意图")
+
+# ==================== 居民界面 (预留) ====================
+with tab3:
+    st.markdown('<div class="section-header">👨‍👩‍👧‍👦 居民用户视角 (开发中)</div>', unsafe_allow_html=True)
+    st.success("""
+    ### 居民友好界面即将推出
+    
+    **计划包含的功能：**
+    - 简单易懂的水质报告
+    - 健康影响解释
+    - 家庭用水建议
+    - 水质问题反馈
+    
+    此模块正在开发中，敬请期待！
+    """)
+    st.image("https://via.placeholder.com/800x400?text=Residential+Water+Quality+Report", 
+             caption="居民水质报告示意图")
+
+# ==================== 页脚 ====================
+st.markdown("---")
+st.markdown(
+    """
+    <div style="text-align: center; color: #666; padding: 20px;">
+        <p>💧 水质安全XAI解释系统 | 基于SHAP的模型可解释性分析</p>
+        <p>数据来源: Water Potability Dataset | 模型: Random Forest Classifier</p>
+        <p>© 2024 水质监管科技平台 | 版本 1.0.0</p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
