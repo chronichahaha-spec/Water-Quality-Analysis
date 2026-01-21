@@ -344,7 +344,7 @@ with tab1:
                 fig_dep, ax_dep = plt.subplots(figsize=(8, 4))
                 shap.dependence_plot(
                     feature,
-                    shap_values[1],
+                    shap_values[:,:,1],
                     X_test,
                     feature_names=feature_names,
                     ax=ax_dep,
