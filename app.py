@@ -484,10 +484,10 @@ with tab3:
                     fig_force, ax_force = plt.subplots(figsize=(12, 3))
                     shap.force_plot(
                         explainer.expected_value[1],
-                        user_shap_values[:,:,1],  # 第一个样本的类别1 SHAP值
+                        user_shap_values[0,:,1],  # 第一个样本的类别1 SHAP值
                         user_input.iloc[0],
                         feature_names=feature_names,
-                        show = false,
+                        show = False,
                         text_rotation=15
                     )
                     plt.title("水质安全影响因素力分析图", fontsize=12, fontweight='bold')
