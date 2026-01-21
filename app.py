@@ -261,7 +261,7 @@ with tab1:
     
     fig1, ax1 = plt.subplots(figsize=(12, 6))
     shap.summary_plot(
-        shap_values[1],  # 类别1的SHAP值
+        shap_values[:,:,1],  # 类别1的SHAP值
         X_test,
         feature_names=feature_names,
         show=False,
