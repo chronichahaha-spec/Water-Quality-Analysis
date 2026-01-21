@@ -377,20 +377,111 @@ with tab1:
 
 # ==================== 供水公司界面 (预留) ====================
 with tab2:
-    st.markdown('<div class="section-header">🏭 供水公司视角 (开发中)</div>', unsafe_allow_html=True)
-    st.info("""
-    ### 供水公司功能即将上线
+    st.markdown('<div class="section-header">👨‍👩‍👧‍👦 居民用户视角 - 我家水质分析</div>', unsafe_allow_html=True)
     
-    **计划包含的功能：**
-    - 工艺参数优化建议
-    - 成本效益分析
-    - 实时水质监控
-    - 处理效率分析
+    # 居民页面布局分为两列
+    col_input, col_viz = st.columns([1, 2])
     
-    此模块正在开发中，敬请期待！
-    """)
-    st.image("https://via.placeholder.com/800x400?text=Water+Treatment+Plant+Dashboard", 
-             caption="供水公司运营面板示意图")
+    with col_input:
+        st.markdown("### 📝 输入水质参数")
+        st.markdown('<div class="info-box">请输入您家的水质检测数据，系统将分析安全性和影响因素。</div>', unsafe_allow_html=True)
+        
+        # 用户输入表单
+        with st.form("water_quality_form"):
+            # 创建9个特征输入框
+            ph_value = st.slider("**ph值 (酸碱度)**", 0.0, 14.0, 7.0, 0.1, 
+                                help="0-14范围，7为中性，6.5-8.5为安全范围")
+            hardness_value = st.slider("**Hardness (硬度 mg/L)**", 47.0, 323.0, 150.0, 1.0,
+                                      help="47-323 mg/L，适中硬度对健康有益")
+            solids_value = st.slider("**Solids (总溶解固体 mg/L)**", 320.0, 61227.0, 20000.0, 100.0,
+                                   help="320-61227 mg/L，反映水中矿物质含量")
+            chloramines_value = st.slider("**Chloramines (氯胺 mg/L)**", 0.35, 13.0, 4.0, 0.1,
+                                        help="0.35-13 mg/L，消毒副产物，应低于4 mg/L")
+            sulfate_value = st.slider("**Sulfate (硫酸盐 mg/L)**", 129.0, 481.0, 250.0, 1.0,
+                                    help="129-481 mg/L，过高可能引起不适")
+            conductivity_value = st.slider("**Conductivity (电导率 μS/cm)**", 181.0, 753.0, 400.0, 1.0,
+                                         help="181-753 μS/cm，反映离子总量")
+            organic_carbon_value = st.slider("**Organic Carbon (有机碳 mg/L)**", 2.2, 28.0, 10.0, 0.1,
+                                           help="2.2-28 mg/L，微生物营养源")
+            trihalomethanes_value = st.slider("**Trihalomethanes (三卤甲烷 μg/L)**", 0.7, 124.0, 50.0, 0.1,
+                                            help="0.7-124 μg/L，潜在致癌物，应低于80 μg/L")
+            turbidity_value = st.slider("**Turbidity (浊度 NTU)**", 1.45, 6.74, 3.0, 0.1,
+                                      help="1.45-6.74 NTU，越低越清澈")
+            
+            # 提交按钮
+            submitted = st.form_submit_button("🔍 分析我家水质", type="primary", use_container_width=True)
+    
+    with col_viz:
+        st.markdown("### 📊 分析结果")
+        
+        if submitted:
+            # 创建输入数据的DataFrame
+            user_input = pd.DataFrame({
+                'ph': [ph_value],
+                'Hardness': [hardness_value],
+                'Solids': [solids_value],
+                'Chloramines': [chloramines_value],
+                'Sulfate': [sulfate_value],
+                'Conductivity': [conductivity_value],
+                'Organic_carbon': [organic_carbon_value],
+                'Trihalomethanes': [trihalomethanes_value],
+                'Turbidity': [turbidity_value]
+            })
+            
+            # 进行预测
+            with st.spinner("正在分析水质..."):
+                # 预测概率和类别
+                proba = rf_model.predict_proba(user_input)[0]
+                prediction = rf_model.predict(user_input)[0]
+                
+                # 计算SHAP值
+                user_shap_values = explainer.shap_values(user_input)
+                
+                # 显示预测结果
+                st.markdown("---")
+                
+                # 创建结果卡片
+                if prediction == 1:
+                    st.success(f"## ✅ 水质安全可饮用")
+                    st.metric("安全概率", f"{proba[1]*100:.1f}%", delta="安全", delta_color="normal")
+                else:
+                    st.error(f"## ⚠️ 水质不推荐饮用")
+                    st.metric("不安全概率", f"{proba[0]*100:.1f}%", delta="风险", delta_color="inverse")
+                
+                # 显示置信度条
+                st.progress(proba[1], text=f"可饮用置信度: {proba[1]*100:.1f}%")
+                
+                st.markdown("---")
+                
+                # SHAP可视化部分
+                st.markdown("### 🔬 影响因素分析")
+                
+                # 创建两个选项卡：力图和决策图
+                shap_tab3, shap_tab4 = st.tabs(["单个特征影响", "决策过程追踪"])
+                
+                with shap_tab3:
+                    st.markdown("#### 各特征贡献度分析")
+                    st.markdown('<div class="info-box">显示每个水质参数对最终预测的具体贡献（正向或负向）</div>', unsafe_allow_html=True)
+                    
+                    fig, ax = plt.subplots(figsize=(12, 8))
+                    
+                    shap.waterfall_plot(
+                    shap.Explanation(
+                      values=user_shap_values[0,:,1],
+                      base_values=explainer.expected_value[1],
+                      data=user_input.iloc[0].values,
+                      feature_names=feature_names
+                    ),
+                    max_display=15,
+                    show=False
+                    )
+                    plt.title("特征贡献度瀑布图", fontsize=14, fontweight='bold')
+                    plt.tight_layout()
+                    st.pyplot(fig)
+                    
+                
+                with shap_tab4:
+                    st.markdown("#### 决策过程可视化")
 
 # ==================== 居民界面 (预留) ====================
 with tab3:
