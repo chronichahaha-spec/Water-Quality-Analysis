@@ -546,6 +546,9 @@ with tab2:
                             total_CFs=5,
                             desired_class="opposite"
                       )
+                      st.markdown(f"#### {"现有水质数据"}")
+                      st.dataframe(company_input, use_container_width=True)
+                      st.markdown("---")
                       st.markdown(f"#### {cf_title}")
                       cf_df = counterfactuals.cf_examples_list[0].final_cfs_df
                       st.dataframe(cf_df, use_container_width=True)
