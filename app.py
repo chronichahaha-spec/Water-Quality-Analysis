@@ -377,111 +377,189 @@ with tab1:
 
 # ==================== 供水公司界面 (预留) ====================
 with tab2:
-    st.markdown('<div class="section-header">👨‍👩‍👧‍👦 居民用户视角 - 我家水质分析</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">🏭 供水公司视角 - 水质处理优化</div>', unsafe_allow_html=True)
     
-    # 居民页面布局分为两列
-    col_input, col_viz = st.columns([1, 2])
+    # 供水公司页面布局分为两列
+    col_input2, col_viz2 = st.columns([1, 2])
     
-    with col_input:
-        st.markdown("### 📝 输入水质参数")
-        st.markdown('<div class="info-box">请输入您家的水质检测数据，系统将分析安全性和影响因素。</div>', unsafe_allow_html=True)
+    with col_input2:
+        st.markdown("### 📝 输入水质处理参数")
+        st.markdown('<div class="info-box">请输入当前处理工艺的水质参数，系统将提供优化建议。</div>', unsafe_allow_html=True)
+        
+        # 使用session_state保存输入值
+        if 'company_inputs' not in st.session_state:
+            st.session_state.company_inputs = {
+                'ph': 7.0,
+                'Hardness': 150.0,
+                'Solids': 20000.0,
+                'Chloramines': 4.0,
+                'Sulfate': 250.0,
+                'Conductivity': 400.0,
+                'Organic_carbon': 10.0,
+                'Trihalomethanes': 50.0,
+                'Turbidity': 3.0
+            }
         
         # 用户输入表单
-        with st.form("water_quality_form"):
-            # 创建9个特征输入框
-            ph_value = st.slider("**ph值 (酸碱度)**", 0.0, 14.0, 7.0, 0.1, 
-                                help="0-14范围，7为中性，6.5-8.5为安全范围")
-            hardness_value = st.slider("**Hardness (硬度 mg/L)**", 47.0, 323.0, 150.0, 1.0,
-                                      help="47-323 mg/L，适中硬度对健康有益")
-            solids_value = st.slider("**Solids (总溶解固体 mg/L)**", 320.0, 61227.0, 20000.0, 100.0,
-                                   help="320-61227 mg/L，反映水中矿物质含量")
-            chloramines_value = st.slider("**Chloramines (氯胺 mg/L)**", 0.35, 13.0, 4.0, 0.1,
-                                        help="0.35-13 mg/L，消毒副产物，应低于4 mg/L")
-            sulfate_value = st.slider("**Sulfate (硫酸盐 mg/L)**", 129.0, 481.0, 250.0, 1.0,
-                                    help="129-481 mg/L，过高可能引起不适")
-            conductivity_value = st.slider("**Conductivity (电导率 μS/cm)**", 181.0, 753.0, 400.0, 1.0,
-                                         help="181-753 μS/cm，反映离子总量")
-            organic_carbon_value = st.slider("**Organic Carbon (有机碳 mg/L)**", 2.2, 28.0, 10.0, 0.1,
-                                           help="2.2-28 mg/L，微生物营养源")
-            trihalomethanes_value = st.slider("**Trihalomethanes (三卤甲烷 μg/L)**", 0.7, 124.0, 50.0, 0.1,
-                                            help="0.7-124 μg/L，潜在致癌物，应低于80 μg/L")
-            turbidity_value = st.slider("**Turbidity (浊度 NTU)**", 1.45, 6.74, 3.0, 0.1,
-                                      help="1.45-6.74 NTU，越低越清澈")
+        with st.form("company_water_quality_form"):
+            # 创建9个特征输入框 - 使用session_state中的值
+            ph_value2 = st.slider("**ph值**", 0.0, 14.0, st.session_state.company_inputs['ph'], 0.1,
+                                help="建议处理范围: 6.8-8.2", key='ph2')
+            hardness_value2 = st.slider("**硬度 (mg/L)**", 47.0, 323.0, st.session_state.company_inputs['Hardness'], 1.0,
+                                       help="软化处理建议值: 80-120", key='hardness2')
+            solids_value2 = st.slider("**总溶解固体 (mg/L)**", 320.0, 61227.0, st.session_state.company_inputs['Solids'], 100.0,
+                                    help="反渗透处理目标: < 500", key='solids2')
+            chloramines_value2 = st.slider("**氯胺 (mg/L)**", 0.35, 13.0, st.session_state.company_inputs['Chloramines'], 0.1,
+                                         help="消毒副产物控制: < 3", key='chloramines2')
+            sulfate_value2 = st.slider("**硫酸盐 (mg/L)**", 129.0, 481.0, st.session_state.company_inputs['Sulfate'], 1.0,
+                                     help="离子交换处理目标: 200-300", key='sulfate2')
+            conductivity_value2 = st.slider("**电导率 (μS/cm)**", 181.0, 753.0, st.session_state.company_inputs['Conductivity'], 1.0,
+                                          help="反映处理效率: 300-500", key='conductivity2')
+            organic_carbon_value2 = st.slider("**有机碳 (mg/L)**", 2.2, 28.0, st.session_state.company_inputs['Organic_carbon'], 0.1,
+                                            help="活性炭过滤目标: < 5", key='organic_carbon2')
+            trihalomethanes_value2 = st.slider("**三卤甲烷 (μg/L)**", 0.7, 124.0, st.session_state.company_inputs['Trihalomethanes'], 0.1,
+                                             help="关键控制指标: < 60", key='trihalomethanes2')
+            turbidity_value2 = st.slider("**浊度 (NTU)**", 1.45, 6.74, st.session_state.company_inputs['Turbidity'], 0.1,
+                                       help="絮凝沉淀目标: < 1", key='turbidity2')
             
-            # 提交按钮
-            submitted = st.form_submit_button("🔍 分析我家水质", type="primary", use_container_width=True)
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                # 提交按钮
+                submitted2 = st.form_submit_button("🔍 分析水质安全性", type="primary", use_container_width=True)
+            with col_btn2:
+                # 获取Dice建议按钮
+                get_dice = st.form_submit_button("🔄 获取优化方案", type="secondary", use_container_width=True)
     
-    with col_viz:
-        st.markdown("### 📊 分析结果")
+    with col_viz2:
+        st.markdown("### 📊 分析结果与优化建议")
         
-        if submitted:
+        # 检查是否有提交
+        if submitted2 or get_dice:
+            # 更新session_state中的值
+            st.session_state.company_inputs = {
+                'ph': ph_value2,
+                'Hardness': hardness_value2,
+                'Solids': solids_value2,
+                'Chloramines': chloramines_value2,
+                'Sulfate': sulfate_value2,
+                'Conductivity': conductivity_value2,
+                'Organic_carbon': organic_carbon_value2,
+                'Trihalomethanes': trihalomethanes_value2,
+                'Turbidity': turbidity_value2
+            }
+            
             # 创建输入数据的DataFrame
-            user_input = pd.DataFrame({
-                'ph': [ph_value],
-                'Hardness': [hardness_value],
-                'Solids': [solids_value],
-                'Chloramines': [chloramines_value],
-                'Sulfate': [sulfate_value],
-                'Conductivity': [conductivity_value],
-                'Organic_carbon': [organic_carbon_value],
-                'Trihalomethanes': [trihalomethanes_value],
-                'Turbidity': [turbidity_value]
-            })
+            company_input = pd.DataFrame([st.session_state.company_inputs])
             
             # 进行预测
-            with st.spinner("正在分析水质..."):
+            with st.spinner("正在分析水质并计算建议..."):
                 # 预测概率和类别
-                proba = rf_model.predict_proba(user_input)[0]
-                prediction = rf_model.predict(user_input)[0]
+                proba2 = rf_model.predict_proba(company_input)[0]
+                prediction2 = rf_model.predict(company_input)[0]
                 
                 # 计算SHAP值
-                user_shap_values = explainer.shap_values(user_input)
+                company_shap_values = explainer.shap_values(company_input)
                 
                 # 显示预测结果
                 st.markdown("---")
                 
                 # 创建结果卡片
-                if prediction == 1:
-                    st.success(f"## ✅ 水质安全可饮用")
-                    st.metric("安全概率", f"{proba[1]*100:.1f}%", delta="安全", delta_color="normal")
-                else:
-                    st.error(f"## ⚠️ 水质不推荐饮用")
-                    st.metric("不安全概率", f"{proba[0]*100:.1f}%", delta="风险", delta_color="inverse")
+                result_col1, result_col2 = st.columns(2)
+                with result_col1:
+                    if prediction2 == 1:
+                        st.success(f"## ✅ 出水水质安全")
+                        st.metric("达标概率", f"{proba2[1]*100:.1f}%", delta="达标", delta_color="normal")
+                    else:
+                        st.error(f"## ⚠️ 出水水质不达标")
+                        st.metric("不达标概率", f"{proba2[0]*100:.1f}%", delta="需改进", delta_color="inverse")
                 
-                # 显示置信度条
-                st.progress(proba[1], text=f"可饮用置信度: {proba[1]*100:.1f}%")
+                with result_col2:
+                    # 显示置信度条
+                    st.progress(proba2[1], text=f"安全置信度: {proba2[1]*100:.1f}%")
+                    st.caption(f"处理效果评分: {proba2[1]*100:.0f}/100")
                 
                 st.markdown("---")
                 
-                # SHAP可视化部分
-                st.markdown("### 🔬 影响因素分析")
                 
-                # 创建两个选项卡：力图和决策图
-                shap_tab3, shap_tab4 = st.tabs(["单个特征影响", "决策过程追踪"])
+                # 创建两个选项卡
+                shap_tab3, shap_tab4 = st.tabs(["参数贡献度", "决策路径"])
                 
                 with shap_tab3:
-                    st.markdown("#### 各特征贡献度分析")
-                    st.markdown('<div class="info-box">显示每个水质参数对最终预测的具体贡献（正向或负向）</div>', unsafe_allow_html=True)
+                    st.markdown("#### 各工艺参数贡献度分析")
+                    st.markdown('<div class="info-box">显示每个处理参数对最终出水水质的贡献度，识别关键控制点。</div>', unsafe_allow_html=True)
                     
-                    fig, ax = plt.subplots(figsize=(12, 8))
+                    fig3, ax3 = plt.subplots(figsize=(12, 8))
                     
                     shap.waterfall_plot(
-                    shap.Explanation(
-                      values=user_shap_values[0,:,1],
-                      base_values=explainer.expected_value[1],
-                      data=user_input.iloc[0].values,
-                      feature_names=feature_names
-                    ),
-                    max_display=15,
-                    show=False
+                        shap.Explanation(
+                            values=company_shap_values[0][:, 1],
+                            base_values=explainer.expected_value[1],
+                            data=company_input.iloc[0].values,
+                            feature_names=feature_names
+                        ),
+                        max_display=15,
+                        show=False
                     )
-                    plt.title("特征贡献度瀑布图", fontsize=14, fontweight='bold')
+                    plt.title("工艺参数贡献度瀑布图（供水公司视角）", fontsize=14, fontweight='bold')
                     plt.tight_layout()
-                    st.pyplot(fig)
-                    
+                    st.pyplot(fig3)
                 
                 with shap_tab4:
-                    st.markdown("#### 决策过程可视化")
+                    # 如果点击了"获取优化方案"，显示Dice建议
+                  if get_dice:
+                      st.markdown("### 🔄 DICE优化方案")
+                      st.markdown('<div class="warning-box">基于反事实解释(CF)的水质处理优化建议，展示如何调整参数以达到水质安全标准。</div>', unsafe_allow_html=True)
+                    
+                      try:
+                        # 使用Dice生成反事实解释
+                        st.info("正在生成反事实优化方案...")
+                        
+                        # 创建Dice解释器
+                        from dice_ml import Data, Model, Dice
+                        
+                        # 准备Dice所需的数据对象
+                        dice_data = Data(
+                            dataframe=pd.concat([X_test, y_test], axis=1),
+                            continuous_features=feature_names,
+                            outcome_name='Potability'
+                        )
+                        
+                        # 创建Dice模型对象
+                        dice_model = Model(model=rf_model, backend='sklearn')
+                        
+                        # 创建Dice解释器
+                        dice_exp = Dice(dice_data, dice_model, method='random')
+                        
+                        # 生成反事实解释
+                        if prediction2 == 1:
+                            # 如果当前是安全的，生成如何可能变得不安全的反事实
+                            desired_class = 0
+                            cf_title = "风险情景模拟：可能导致水质不达标的参数变化"
+                        else:
+                            # 如果当前是不安全的，生成如何变得安全的反事实
+                            desired_class = 1
+                            cf_title = "优化建议：实现水质达标的参数调整方案"
+                        
+                        # 生成反事实
+                        counterfactuals = dice_exp.generate_counterfactuals(
+                            company_input,
+                            total_CFs=5,
+                            desired_class=desired_class,
+                            proximity_weight=1.0,
+                            diversity_weight=1.0,
+                            features_to_vary='all'
+                        )
+                        
+                        
+    
+    # 底部信息
+    st.markdown("---")
+    st.markdown("""
+    <div style="text-align: center; color: #666; font-size: 0.9rem;">
+    <p>🏭 注意：本系统建议仅供参考，实际工艺调整需结合现场条件和专家意见。</p>
+    <p>DICE算法基于机器学习模型生成反事实解释，建议进行小试验证。</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ==================== 居民界面 (预留) ====================
 with tab3:
