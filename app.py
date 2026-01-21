@@ -547,7 +547,8 @@ with tab2:
                             desired_class="opposite"
                       )
                       st.markdown(f"#### {cf_title}")
-                      counterfactuals.visualize_as_dataframe(show_only_changes=True) 
+                      st.dataframe(counterfactuals.visualize_as_dataframe(show_only_changes=True), use_container_width=True)
+                       
                         
     
     # 底部信息
