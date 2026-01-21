@@ -189,13 +189,12 @@ def load_data_and_train():
     explainer = shap.TreeExplainer(rf_model)
     
     # 计算SHAP值（只计算前200个样本来加速）
-    X_test_sample = X_test.iloc[:200]
-    shap_values = explainer.shap_values(X_test_sample)
+    shap_values = explainer.shap_values(X_test)
     
     # 计算SHAP值的标准差
     shap_std = {}
     if shap_values is not None and len(shap_values) > 1:
-        shap_class1 = shap_values[1]  # 类别1的SHAP值
+        shap_class1 = shap_values[:,:,1]  # 类别1的SHAP值
         for i, feature in enumerate(feature_names):
             shap_std[feature] = np.std(shap_class1[:, i])
     
