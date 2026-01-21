@@ -488,8 +488,8 @@ with tab3:
                         show=False
                         )
     
-                   # 在Streamlit中显示HTML
-                   st.components.v1.html(force_plot.html(), height=400, scrolling=True)
+                    # 在Streamlit中显示HTML
+                    st.components.v1.html(force_plot.html(), height=400, scrolling=True)
                     
                 
                 with shap_tab2:
