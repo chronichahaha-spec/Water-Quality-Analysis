@@ -83,7 +83,6 @@ with st.sidebar:
     st.markdown("""
     **Model**: Random Forest  
     **XAI Method**: SHAP DiCE
-    
     **Data**: Water Potability Dataset
     """)
     
