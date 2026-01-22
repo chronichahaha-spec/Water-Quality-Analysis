@@ -250,7 +250,7 @@ with tab1:
         show=False,
         plot_type="dot"
     )
-    plt.title("SHAP Feature Importance Summary Plot", fontsize=14, fontweight='bold')
+    plt.title("SHAP Feature Importance Summary Plot", fontsize=12, fontweight='bold')
     plt.tight_layout()
     st.pyplot(fig1)
     
