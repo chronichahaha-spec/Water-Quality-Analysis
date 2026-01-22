@@ -566,7 +566,7 @@ with tab3:
             submitted = st.form_submit_button("🔍 Analyze Water Potablity", type="primary", use_container_width=True)
     
     with col_viz:
-        st.markdown("### 📊 Analysis Result")
+        st.markdown("### 📊 Prediction Result Analysis")
         
         if submitted:
             #Convert Input to Data Frame
@@ -613,8 +613,8 @@ with tab3:
                 shap_tab1, shap_tab2 = st.tabs(["Local Feature Impact", "Decision "])
                 
                 with shap_tab1:
-                    st.markdown("#### 各特征贡献度分析")
-                    st.markdown('<div class="info-box">显示每个水质参数对最终预测的具体贡献（正向或负向）</div>', unsafe_allow_html=True)
+                    st.markdown("#### Feature Conntribution Analysis")
+                    st.markdown('<div class="info-box">Show Contribution of Each Feature to Potability Prediction (Positive/Negative)</div>', unsafe_allow_html=True)
                     
                     fig, ax = plt.subplots(figsize=(12, 8))
                     
