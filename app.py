@@ -10,15 +10,13 @@ from imblearn.over_sampling import RandomOverSampler
 import warnings
 warnings.filterwarnings('ignore')
 
-# 设置页面配置
+#Page Setting
 st.set_page_config(
-    page_title="水质安全XAI解释系统",
-    page_icon="💧",
+    page_title="Water Quality XAI Explanation Dashboard",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# 自定义CSS样式
 st.markdown("""
 <style>
     .main-title {
@@ -72,97 +70,83 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 应用主标题
-st.markdown('<div class="main-title">💧 水质安全预测模型可解释性(XAI)系统</div>', unsafe_allow_html=True)
+#Main Title
+st.markdown('<div class="main-title">📊 Water Quality XAI Explanation Dashboard</div>', unsafe_allow_html=True)
 
-# 角色选择 - 使用水平选项卡
-st.markdown("### 请选择您的角色视角：")
-tab1, tab2, tab3 = st.tabs(["📊 **水质监管部门**", "🏭 **供水公司**", "👨‍👩‍👧‍👦 **居民**"])
+#Stakeholder Roles
+st.markdown("### Please select you role:")
+tab1, tab2, tab3 = st.tabs(["📊 **Environment Regulator**", "🏭 **Water Supplyment Company**", "👨‍👩‍👧‍👦 **Resident**"])
 
-# 侧边栏信息
+#Sidebar
 with st.sidebar:
-    st.write("💧")
-    st.markdown("### 系统信息")
+    st.markdown("### XAI Explanation System Information")
     st.markdown("""
-    **版本**: 1.0.0  
-    **模型**: Random Forest  
-    **XAI方法**: SHAP  
-    **数据**: Water Potability Dataset
+    **Model**: Random Forest  
+    **XAI Method**: SHAP DiCE 
+    **Data**: Water Potability Dataset from Kaggle
     """)
     
     st.markdown("---")
-    st.markdown("### 使用说明")
+    st.markdown("### Feature Envolved In Model Prediction")
     st.markdown("""
-    1. 选择上方的角色标签
-    2. 查看对应角色的XAI解释
-    3. 展开/收起特征分析部分
-    4. 所有分析基于同一模型
-    """)
-    
-    st.markdown("---")
-    st.markdown("### 特征说明")
-    st.markdown("""
-    - **ph**: 酸碱度 (0-14)
-    - **Hardness**: 硬度 (mg/L)
-    - **Solids**: 总溶解固体 (mg/L)
-    - **Chloramines**: 氯胺 (mg/L)
-    - **Sulfate**: 硫酸盐 (mg/L)
-    - **Conductivity**: 电导率 (μS/cm)
-    - **Organic_carbon**: 有机碳 (mg/L)
-    - **Trihalomethanes**: 三卤甲烷 (μg/L)
-    - **Turbidity**: 浊度 (NTU)
+    - **PH
+    - **Hardness
+    - **Solids
+    - **Chloramines
+    - **Sulfate
+    - **Conductivity
+    - **Organic_carbon
+    - **Trihalomethanes
+    - **Turbidity
     """)
 
-# ==================== 数据加载和模型训练函数 ====================
+# ==================== Load Data/Train Model ====================
 @st.cache_resource
 def load_data_and_train():
-    """加载数据并训练模型，返回所有必要对象"""
     
-    # 显示加载进度
+    #Progress Bar
     progress_bar = st.progress(0)
     status_text = st.empty()
     
-    # 步骤1: 加载数据
-    status_text.text("步骤1/4: 加载数据集...")
+    #Step1: Load Data
+    status_text.text("Step1/4: Load Dataset...")
     progress_bar.progress(25)
     
     try:
-        # 从data文件夹读取数据
         df = pd.read_csv("data/water_potability.csv")
     except FileNotFoundError:
-        st.error("找不到数据文件: data/water_potability.csv")
+        st.error("Fail to search data file: data/water_potability.csv")
         st.stop()
     
-    # 步骤2: 数据处理
-    status_text.text("步骤2/4: 处理数据...")
+    #Step2: Preprocess Data
+    status_text.text("Step2/4: Preprocess Data...")
     progress_bar.progress(50)
     
-    # 处理缺失值
+    #Fill Nan Value
     for col in ['ph', 'Sulfate', 'Trihalomethanes']:
         if col in df.columns:
             df[col] = df[col].fillna(df[col].mean())
     
-    # 准备特征和目标
     feature_names = ['ph', 'Hardness', 'Solids', 'Chloramines', 'Sulfate', 
                      'Conductivity', 'Organic_carbon', 'Trihalomethanes', 'Turbidity']
     
     X = df[feature_names].copy()
     y = df['Potability'].copy()
     
-    # 步骤3: 训练模型
-    status_text.text("步骤3/4: 训练模型...")
+    # Step3: Train Model
+    status_text.text("Step3/4: Train Model...")
     progress_bar.progress(75)
     
-    # 划分训练测试集
+    #Train/Test Set Split
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.3, random_state=42, stratify=y
     )
     
-    # 处理类别不平衡
+    #Oversample
     ros = RandomOverSampler(random_state=42)
     X_train_resampled, y_train_resampled = ros.fit_resample(X_train, y_train)
     
-    # 训练随机森林模型
+    #Train Random Forest Data
     rf_model = RandomForestClassifier(
         n_estimators=100,
         max_depth=10,
@@ -174,34 +158,33 @@ def load_data_and_train():
     
     rf_model.fit(X_train_resampled, y_train_resampled)
     
-    # 计算模型性能
+    #Model Performance
     y_pred = rf_model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred, average='macro')
     recall = recall_score(y_test, y_pred, average='macro')
     f1 = f1_score(y_test, y_pred, average='macro')
     
-    # 步骤4: 计算SHAP值
-    status_text.text("步骤4/4: 计算SHAP解释值...")
+    #Step4: Compute SHAP Value
+    status_text.text("Step4/4: Compute SHAP Value...")
     progress_bar.progress(95)
     
-    # 创建SHAP解释器
     explainer = shap.TreeExplainer(rf_model)
     
-    # 计算SHAP值（只计算前200个样本来加速）
+    #SHAP Value
     shap_values = explainer.shap_values(X_test)
     
-    # 计算SHAP值的标准差
+    #SHAP std
     shap_std = {}
     if shap_values is not None and len(shap_values) > 1:
-        shap_class1 = shap_values[:,:,1]  # 类别1的SHAP值
+        shap_class1 = shap_values[:,:,1]  #Class 1: Potable
         for i, feature in enumerate(feature_names):
             shap_std[feature] = np.std(shap_class1[:, i])
     
-    status_text.text("准备完成!")
+    status_text.text("Done Model Training")
     progress_bar.progress(100)
     
-    # 清理进度显示
+    #Remove Progress Bar
     progress_bar.empty()
     status_text.empty()
     
@@ -223,13 +206,10 @@ def load_data_and_train():
         }
     }
 
-# ==================== 主应用逻辑 ====================
-
-# 加载数据并训练模型（带缓存）
-with st.spinner('正在初始化模型和计算SHAP值...'):
+#Load Data/Train Model
+with st.spinner('Initialize Model...'):
     data_dict = load_data_and_train()
 
-# 提取数据
 rf_model = data_dict['model']
 explainer = data_dict['explainer']
 shap_values = data_dict['shap_values']
@@ -239,81 +219,81 @@ feature_names = data_dict['feature_names']
 shap_std = data_dict['shap_std']
 metrics = data_dict['metrics']
 
-# ==================== 监管部门界面 ====================
+# ==================== Environment Regulator ====================
 with tab1:
-    st.markdown('<div class="section-header">📊 水质监管部门 - XAI分析面板</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">📊 Environment Regulator - XAI Dashboard</div>', unsafe_allow_html=True)
     
-    # 显示模型性能
+    #Show RF Model Performance
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("准确率", f"{metrics['accuracy']:.3f}")
+        st.metric("Accuracy", f"{metrics['accuracy']:.3f}")
     with col2:
-        st.metric("精确率", f"{metrics['precision']:.3f}")
+        st.metric("Precision", f"{metrics['precision']:.3f}")
     with col3:
-        st.metric("召回率", f"{metrics['recall']:.3f}")
+        st.metric("Recall", f"{metrics['recall']:.3f}")
     with col4:
-        st.metric("F1分数", f"{metrics['f1']:.3f}")
+        st.metric("F1 Score", f"{metrics['f1']:.3f}")
     
     st.markdown("---")
     
-    # 第一部分: SHAP摘要图
-    st.markdown('<div class="section-header">1. 全局特征重要性分析</div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">此图显示各特征对"水质安全"(类别1)预测的平均影响程度，帮助识别关键监管指标。</div>', unsafe_allow_html=True)
+    #P1 SHAP Summary Plot
+    st.markdown('<div class="section-header">1. Global Feature Importance Analysis</div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">This Plot Shows Global Feature Importance Rank (Ascending Order)</div>', unsafe_allow_html=True)
     
     fig1, ax1 = plt.subplots(figsize=(12, 6))
     shap.summary_plot(
-        shap_values[:,:,1],  # 类别1的SHAP值
+        shap_values[:,:,1],  #Class 1: Water Potable
         X_test,
         feature_names=feature_names,
         show=False,
         plot_type="dot"
     )
-    plt.title("SHAP特征重要性摘要图 (类别1: 水质安全)", fontsize=14, fontweight='bold')
+    plt.title("SHAP Feature Importance Summary Plot", fontsize=14, fontweight='bold')
     plt.tight_layout()
     st.pyplot(fig1)
     
-    # 第二部分: SHAP值标准差分布
-    st.markdown('<div class="section-header">2. 风险波动分析 - SHAP值标准差分布</div>', unsafe_allow_html=True)
-    st.markdown('<div class="warning-box">标准差越大，表示该特征在不同样本中的影响波动越大，监管时需要特别关注其变化范围。</div>', unsafe_allow_html=True)
+    #SHAP STD Plot
+    st.markdown('<div class="section-header">SHAP Standard Deviation Plot</div>', unsafe_allow_html=True)
+    st.markdown('<div class="warning-box">Higher STD Value implies Higher Feature Importance to Potability Prediction</div>', unsafe_allow_html=True)
     
     fig2, ax2 = plt.subplots(figsize=(12, 6))
     features = list(shap_std.keys())
     std_values = list(shap_std.values())
     
-    # 排序以便更好地展示
-    sorted_indices = np.argsort(std_values)[::-1]
+    #Sort STD Values (ascending sequence)
+    sorted_indices = np.argsort(std_values)
     features_sorted = [features[i] for i in sorted_indices]
     values_sorted = [std_values[i] for i in sorted_indices]
     
     colors = plt.cm.Blues(np.linspace(0.4, 0.9, len(features_sorted)))
     bars = ax2.barh(features_sorted, values_sorted, color=colors)
     
-    # 添加数值标签
+    #Insert Label to Bar Chart
     for bar, value in zip(bars, values_sorted):
         width = bar.get_width()
         ax2.text(width + 0.002, bar.get_y() + bar.get_height()/2,
                 f'{value:.4f}', ha='left', va='center')
     
-    ax2.set_xlabel('SHAP值标准差', fontsize=12)
-    ax2.set_title('各特征SHAP值波动程度 (类别1)', fontsize=14, fontweight='bold')
+    ax2.set_xlabel('SHAP Standard Deviation', fontsize=12)
+    ax2.set_title('Feature Importance Rank to Potability(Class 1)', fontsize=14, fontweight='bold')
     ax2.grid(axis='x', alpha=0.3, linestyle='--')
     plt.tight_layout()
     st.pyplot(fig2)
     
-    # 第三部分: 特征依赖关系分析 (可折叠分栏)
-    st.markdown('<div class="section-header">3. 详细特征依赖关系分析</div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">点击展开查看每个特征如何影响水质安全预测，了解特征的边际效应。</div>', unsafe_allow_html=True)
+    #SHAP Dependency Plot
+    st.markdown('<div class="section-header">3. Relationship between Feature Value and Prediction (Feature Dependency)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">Click to view impact(dependency) of each features to prediction</div>', unsafe_allow_html=True)
     
-    # 添加全部展开/收起按钮
+    #Expand All/Collapse All Button
     col_expand1, col_expand2 = st.columns(2)
     with col_expand1:
-        if st.button("🔼 全部收起", use_container_width=True):
+        if st.button("🔼 Expand All", use_container_width=True):
             st.session_state.expand_all = False
     with col_expand2:
-        if st.button("🔽 全部展开", use_container_width=True):
+        if st.button("🔽 Collapse All", use_container_width=True):
             st.session_state.expand_all = True
     
-    # 初始化session state
+    #Initialize Session State
     if 'expand_all' not in st.session_state:
         st.session_state.expand_all = False
     
@@ -330,18 +310,18 @@ with tab1:
         'Turbidity': '浊度反映水中悬浮物含量，影响消毒效果。'
     }
     
-    # 为每个特征创建可折叠分栏
+    #Create Folding Subfield for Each Features
     for i, feature in enumerate(feature_names):
         with st.expander(f"**{feature}** - {feature_descriptions.get(feature, '')}", 
                         expanded=st.session_state.expand_all):
             
             st.markdown(f'<div class="feature-card">', unsafe_allow_html=True)
             
-            # 创建两列布局
+            #Split into left/right column
             col_left, col_right = st.columns([2, 1])
             
             with col_left:
-                # 生成依赖图
+                #SHAP Dependency Plot
                 fig_dep, ax_dep = plt.subplots(figsize=(8, 4))
                 shap.dependence_plot(
                     feature,
@@ -351,9 +331,9 @@ with tab1:
                     ax=ax_dep,
                     show=False
                 )
-                ax_dep.set_title(f'{feature} SHAP依赖图', fontsize=12, fontweight='bold')
+                ax_dep.set_title(f'{feature} SHAP Dependency Plot', fontsize=12, fontweight='bold')
                 ax_dep.set_xlabel(feature, fontsize=10)
-                ax_dep.set_ylabel('SHAP值 (对类别1的影响)', fontsize=10)
+                ax_dep.set_ylabel('SHAP Value (Potability/Class 1 Prediction)', fontsize=10)
                 plt.tight_layout()
                 st.pyplot(fig_dep)
             
@@ -376,18 +356,17 @@ with tab1:
             
             st.markdown('</div>', unsafe_allow_html=True)
 
-# ==================== 供水公司界面 (预留) ====================
+# ==================== Water Supplyment Company ====================
 with tab2:
-    st.markdown('<div class="section-header">🏭 供水公司视角 - 水质处理优化</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">🏭 Water Supplyment Company View</div>', unsafe_allow_html=True)
     
-    # 供水公司页面布局分为两列
+    #Split into left/right column
     col_input2, col_viz2 = st.columns([1, 2])
     
     with col_input2:
-        st.markdown("### 📝 输入水质处理参数")
-        st.markdown('<div class="info-box">请输入当前处理工艺的水质参数，系统将提供优化建议。</div>', unsafe_allow_html=True)
+        st.markdown("### 📝 Please Input Your Water Sample Data")
+        #st.markdown('<div class="info-box">System will analyze the input data and give advise</div>', unsafe_allow_html=True)
         
-        # 使用session_state保存输入值
         if 'company_inputs' not in st.session_state:
             st.session_state.company_inputs = {
                 'ph': 7.0,
@@ -401,42 +380,42 @@ with tab2:
                 'Turbidity': 3.0
             }
         
-        # 用户输入表单
+        #User Input Module
         with st.form("company_water_quality_form"):
-            # 创建9个特征输入框 - 使用session_state中的值
-            ph_value2 = st.slider("**ph值**", 0.0, 14.0, st.session_state.company_inputs['ph'], 0.1,
-                                help="建议处理范围: 6.8-8.2", key='ph2')
-            hardness_value2 = st.slider("**硬度 (mg/L)**", 47.0, 323.0, st.session_state.company_inputs['Hardness'], 1.0,
-                                       help="软化处理建议值: 80-120", key='hardness2')
-            solids_value2 = st.slider("**总溶解固体 (mg/L)**", 320.0, 61227.0, st.session_state.company_inputs['Solids'], 100.0,
-                                    help="反渗透处理目标: < 500", key='solids2')
-            chloramines_value2 = st.slider("**氯胺 (mg/L)**", 0.35, 13.0, st.session_state.company_inputs['Chloramines'], 0.1,
-                                         help="消毒副产物控制: < 3", key='chloramines2')
-            sulfate_value2 = st.slider("**硫酸盐 (mg/L)**", 129.0, 481.0, st.session_state.company_inputs['Sulfate'], 1.0,
-                                     help="离子交换处理目标: 200-300", key='sulfate2')
-            conductivity_value2 = st.slider("**电导率 (μS/cm)**", 181.0, 753.0, st.session_state.company_inputs['Conductivity'], 1.0,
-                                          help="反映处理效率: 300-500", key='conductivity2')
-            organic_carbon_value2 = st.slider("**有机碳 (mg/L)**", 2.2, 28.0, st.session_state.company_inputs['Organic_carbon'], 0.1,
-                                            help="活性炭过滤目标: < 5", key='organic_carbon2')
-            trihalomethanes_value2 = st.slider("**三卤甲烷 (μg/L)**", 0.7, 124.0, st.session_state.company_inputs['Trihalomethanes'], 0.1,
-                                             help="关键控制指标: < 60", key='trihalomethanes2')
-            turbidity_value2 = st.slider("**浊度 (NTU)**", 1.45, 6.74, st.session_state.company_inputs['Turbidity'], 0.1,
-                                       help="絮凝沉淀目标: < 1", key='turbidity2')
+            
+            ph_value2 = st.slider("**ph**", 0.0, 14.0, st.session_state.company_inputs['ph'], 0.1,
+                                key='ph2')
+            hardness_value2 = st.slider("**Hardness (mg/L)**", 47.0, 323.0, st.session_state.company_inputs['Hardness'], 1.0,
+                                        key='hardness2')
+            solids_value2 = st.slider("**Solids (mg/L)**", 320.0, 61227.0, st.session_state.company_inputs['Solids'], 100.0,
+                                        key='solids2')
+            chloramines_value2 = st.slider("**Chloramines (mg/L)**", 0.35, 13.0, st.session_state.company_inputs['Chloramines'], 0.1,
+                                          key='chloramines2')
+            sulfate_value2 = st.slider("**Sulfate (mg/L)**", 129.0, 481.0, st.session_state.company_inputs['Sulfate'], 1.0,
+                                     key='sulfate2')
+            conductivity_value2 = st.slider("**Conductivity (μS/cm)**", 181.0, 753.0, st.session_state.company_inputs['Conductivity'], 1.0,
+                                          key='conductivity2')
+            organic_carbon_value2 = st.slider("**Organic_carbon (mg/L)**", 2.2, 28.0, st.session_state.company_inputs['Organic_carbon'], 0.1,
+                                             key='organic_carbon2')
+            trihalomethanes_value2 = st.slider("**Trihalomethanes (μg/L)**", 0.7, 124.0, st.session_state.company_inputs['Trihalomethanes'], 0.1,
+                                              key='trihalomethanes2')
+            turbidity_value2 = st.slider("**Turbidity (NTU)**", 1.45, 6.74, st.session_state.company_inputs['Turbidity'], 0.1,
+                                        key='turbidity2')
             
             col_btn1, col_btn2 = st.columns(2)
             with col_btn1:
-                # 提交按钮
-                submitted2 = st.form_submit_button("🔍 分析水质安全性", type="primary", use_container_width=True)
+                #Submission Button
+                submitted2 = st.form_submit_button("🔍 Analyze Water Potablity", type="primary", use_container_width=True)
             with col_btn2:
-                # 获取Dice建议按钮
-                get_dice = st.form_submit_button("🔄 获取优化方案", type="secondary", use_container_width=True)
+                #DiCE Advice
+                get_dice = st.form_submit_button("🔄 Access DiCE Advise", type="secondary", use_container_width=True)
     
     with col_viz2:
-        st.markdown("### 📊 分析结果与优化建议")
+        st.markdown("### 📊 Prediction Result Analysis/Optimization Advise")
         
-        # 检查是否有提交
+        #Check Input Submission
         if submitted2 or get_dice:
-            # 更新session_state中的值
+            
             st.session_state.company_inputs = {
                 'ph': ph_value2,
                 'Hardness': hardness_value2,
@@ -449,45 +428,42 @@ with tab2:
                 'Turbidity': turbidity_value2
             }
             
-            # 创建输入数据的DataFrame
+            #Convert Input to Data Frame
             company_input = pd.DataFrame([st.session_state.company_inputs])
             
-            # 进行预测
-            with st.spinner("正在分析水质并计算建议..."):
-                # 预测概率和类别
+            with st.spinner("Analyzing Water Potability"):
+                #Prediction
                 proba2 = rf_model.predict_proba(company_input)[0]
                 prediction2 = rf_model.predict(company_input)[0]
                 
-                # 计算SHAP值
+                #SHAP Value
                 company_shap_values = explainer.shap_values(company_input)
                 
-                # 显示预测结果
+                #Show Prediction Result
                 st.markdown("---")
                 
-                # 创建结果卡片
                 result_col1, result_col2 = st.columns(2)
                 with result_col1:
                     if prediction2 == 1:
-                        st.success(f"## ✅ 出水水质安全")
-                        st.metric("达标概率", f"{proba2[1]*100:.1f}%", delta="达标", delta_color="normal")
+                        st.success(f"## Prediction: Potable")
+                        
                     else:
-                        st.error(f"## ⚠️ 出水水质不达标")
-                        st.metric("不达标概率", f"{proba2[0]*100:.1f}%", delta="需改进", delta_color="inverse")
+                        st.error(f"## Prediction: Not Potable")
+                        
                 
                 with result_col2:
-                    # 显示置信度条
-                    st.progress(proba2[1], text=f"安全置信度: {proba2[1]*100:.1f}%")
-                    st.caption(f"处理效果评分: {proba2[1]*100:.0f}/100")
+                    #Show Confidence Bar
+                    st.progress(proba2[1], text=f"Confidence: {proba2[1]*100:.1f}%")
                 
                 st.markdown("---")
                 
                 
-                # 创建两个选项卡
-                shap_tab3, shap_tab4 = st.tabs(["参数贡献度", "决策路径"])
+                #Create 2 function Field
+                shap_tab3, shap_tab4 = st.tabs(["Feature Impact", "Dice Advise"])
                 
                 with shap_tab3:
-                    st.markdown("#### 各工艺参数贡献度分析")
-                    st.markdown('<div class="info-box">显示每个处理参数对最终出水水质的贡献度，识别关键控制点。</div>', unsafe_allow_html=True)
+                    st.markdown("#### Feature Contribution to Potability Prediction (Class1)")
+                    st.markdown('<div class="info-box">Show Impact of Each Feature to affect Prediction</div>', unsafe_allow_html=True)
                     
                     fig3, ax3 = plt.subplots(figsize=(12, 8))
                     
@@ -501,52 +477,50 @@ with tab2:
                         max_display=15,
                         show=False
                     )
-                    plt.title("工艺参数贡献度瀑布图（供水公司视角）", fontsize=14, fontweight='bold')
+                    plt.title("SHAP Watefall Plot (Local Feature Impact)", fontsize=14, fontweight='bold')
                     plt.tight_layout()
                     st.pyplot(fig3)
                 
                 with shap_tab4:
-                    # 如果点击了"获取优化方案"，显示Dice建议
+                
                   if get_dice:
-                      st.markdown("### 🔄 DICE优化方案")
+                      st.markdown("### 🔄 DICE Counterfactual Advise")
                       st.markdown('<div class="warning-box">基于反事实解释(CF)的水质处理优化建议，展示如何调整参数以达到水质安全标准。</div>', unsafe_allow_html=True)
                     
-                      # 使用Dice生成反事实解释
-                      st.info("正在生成反事实优化方案...")
+                      #DiCE Counterfactual Explanation
+                      st.info("Generate Counterfactual Optimization Advise...")
                         
-                      # 创建Dice解释器
                       from dice_ml import Data, Model, Dice
                         
-                      # 准备Dice所需的数据对象
+                      #Create Data Frame for DiCE
                       dice_data = Data(
                             dataframe=pd.concat([X_test, y_test], axis=1),
                             continuous_features=feature_names,
                             outcome_name='Potability'
                       )
                         
-                      # 创建Dice模型对象
+                      #Create DiCE Model
                       dice_model = Model(model=rf_model, backend='sklearn')
                         
-                      # 创建Dice解释器
                       dice_exp = Dice(dice_data, dice_model, method='random')
                         
-                      # 生成反事实解释
+                      #Dice Explanation
                       if prediction2 == 1:
-                            # 如果当前是安全的，生成如何可能变得不安全的反事实
+                            #Potable -> Danger to be polluted
                             desired_class = 0
-                            cf_title = "风险情景模拟：可能导致水质不达标的参数变化"
+                            cf_title = "Risk Scenario Simulation: Prevent to Pollution"
                       else:
-                            # 如果当前是不安全的，生成如何变得安全的反事实
+                            #Not Potable -> Optimization for Water Quality
                             desired_class = 1
-                            cf_title = "优化建议：实现水质达标的参数调整方案"
+                            cf_title = "Optimization Action Proposal"
                         
-                      # 生成反事实
+                      #Counterfactual
                       counterfactuals = dice_exp.generate_counterfactuals(
                             company_input,
                             total_CFs=5,
                             desired_class="opposite"
                       )
-                      st.markdown(f"#### {"现有水质数据"}")
+                      st.markdown(f"#### {"Input Sample Data"}")
                       st.dataframe(company_input, use_container_width=True)
                       st.markdown("---")
                       st.markdown(f"#### {cf_title}")
@@ -555,56 +529,45 @@ with tab2:
                        
                         
     
-    # 底部信息
     st.markdown("---")
     st.markdown("""
     <div style="text-align: center; color: #666; font-size: 0.9rem;">
-    <p>🏭 注意：本系统建议仅供参考，实际工艺调整需结合现场条件和专家意见。</p>
-    <p>DICE算法基于机器学习模型生成反事实解释，建议进行小试验证。</p>
+    <p>Attention：The System Advises are intended for reference only!</p>
     </div>
     """, unsafe_allow_html=True)
 
-# ==================== 居民界面 (预留) ====================
+# ==================== Resident ====================
 with tab3:
-    st.markdown('<div class="section-header">👨‍👩‍👧‍👦 居民用户视角 - 我家水质分析</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">👨‍👩‍👧‍👦 Resident View - Water Potablity Analysis</div>', unsafe_allow_html=True)
     
-    # 居民页面布局分为两列
+    #Split into left/right column
     col_input, col_viz = st.columns([1, 2])
     
     with col_input:
-        st.markdown("### 📝 输入水质参数")
-        st.markdown('<div class="info-box">请输入您家的水质检测数据，系统将分析安全性和影响因素。</div>', unsafe_allow_html=True)
+        st.markdown("### 📝 Input Your Water Sample Data")
+        st.markdown('<div class="info-box">System Will Analyze Potability Result and Feature Impact</div>', unsafe_allow_html=True)
         
-        # 用户输入表单
+        #User Input
         with st.form("water_quality_form"):
-            # 创建9个特征输入框
-            ph_value = st.slider("**ph值 (酸碱度)**", 0.0, 14.0, 7.0, 0.1, 
-                                help="0-14范围，7为中性，6.5-8.5为安全范围")
-            hardness_value = st.slider("**Hardness (硬度 mg/L)**", 47.0, 323.0, 150.0, 1.0,
-                                      help="47-323 mg/L，适中硬度对健康有益")
-            solids_value = st.slider("**Solids (总溶解固体 mg/L)**", 320.0, 61227.0, 20000.0, 100.0,
-                                   help="320-61227 mg/L，反映水中矿物质含量")
-            chloramines_value = st.slider("**Chloramines (氯胺 mg/L)**", 0.35, 13.0, 4.0, 0.1,
-                                        help="0.35-13 mg/L，消毒副产物，应低于4 mg/L")
-            sulfate_value = st.slider("**Sulfate (硫酸盐 mg/L)**", 129.0, 481.0, 250.0, 1.0,
-                                    help="129-481 mg/L，过高可能引起不适")
-            conductivity_value = st.slider("**Conductivity (电导率 μS/cm)**", 181.0, 753.0, 400.0, 1.0,
-                                         help="181-753 μS/cm，反映离子总量")
-            organic_carbon_value = st.slider("**Organic Carbon (有机碳 mg/L)**", 2.2, 28.0, 10.0, 0.1,
-                                           help="2.2-28 mg/L，微生物营养源")
-            trihalomethanes_value = st.slider("**Trihalomethanes (三卤甲烷 μg/L)**", 0.7, 124.0, 50.0, 0.1,
-                                            help="0.7-124 μg/L，潜在致癌物，应低于80 μg/L")
-            turbidity_value = st.slider("**Turbidity (浊度 NTU)**", 1.45, 6.74, 3.0, 0.1,
-                                      help="1.45-6.74 NTU，越低越清澈")
+            #Sliders for 9 features
+            ph_value = st.slider("**PH**", 0.0, 14.0, 7.0, 0.1 )
+            hardness_value = st.slider("**Hardness (mg/L)**", 47.0, 323.0, 150.0, 1.0)
+            solids_value = st.slider("**Solids (mg/L)**", 320.0, 61227.0, 20000.0, 100.0)
+            chloramines_value = st.slider("**Chloramines (mg/L)**", 0.35, 13.0, 4.0, 0.1)
+            sulfate_value = st.slider("**Sulfate (mg/L)**", 129.0, 481.0, 250.0, 1.0)
+            conductivity_value = st.slider("**Conductivity (μS/cm)**", 181.0, 753.0, 400.0, 1.0)
+            organic_carbon_value = st.slider("**Organic Carbon (mg/L)**", 2.2, 28.0, 10.0, 0.1)
+            trihalomethanes_value = st.slider("**Trihalomethanes (μg/L)**", 0.7, 124.0, 50.0, 0.1)
+            turbidity_value = st.slider("**Turbidity (NTU)**", 1.45, 6.74, 3.0, 0.1)
             
-            # 提交按钮
-            submitted = st.form_submit_button("🔍 分析我家水质", type="primary", use_container_width=True)
+            #Submission Button
+            submitted = st.form_submit_button("🔍 Analyze Water Potablity", type="primary", use_container_width=True)
     
     with col_viz:
-        st.markdown("### 📊 分析结果")
+        st.markdown("### 📊 Analysis Result")
         
         if submitted:
-            # 创建输入数据的DataFrame
+            #Convert Input to Data Frame
             user_input = pd.DataFrame({
                 'ph': [ph_value],
                 'Hardness': [hardness_value],
@@ -617,36 +580,35 @@ with tab3:
                 'Turbidity': [turbidity_value]
             })
             
-            # 进行预测
-            with st.spinner("正在分析水质..."):
-                # 预测概率和类别
+            #Prediction
+            with st.spinner("Analyze Water Quality"):
+                
                 proba = rf_model.predict_proba(user_input)[0]
                 prediction = rf_model.predict(user_input)[0]
                 
-                # 计算SHAP值
+                #SHAP Value
                 user_shap_values = explainer.shap_values(user_input)
                 
-                # 显示预测结果
+                #Show Prediction
                 st.markdown("---")
                 
-                # 创建结果卡片
                 if prediction == 1:
-                    st.success(f"## ✅ 水质安全可饮用")
-                    st.metric("安全概率", f"{proba[1]*100:.1f}%", delta="安全", delta_color="normal")
+                    st.success(f"## Prediction: Potable")
+                    
                 else:
-                    st.error(f"## ⚠️ 水质不推荐饮用")
-                    st.metric("不安全概率", f"{proba[0]*100:.1f}%", delta="风险", delta_color="inverse")
+                    st.error(f"## Prediction: Potable")
+                    
                 
-                # 显示置信度条
-                st.progress(proba[1], text=f"可饮用置信度: {proba[1]*100:.1f}%")
+                #Show Confidence
+                st.progress(proba[1], text=f"Confidence: {proba[1]*100:.1f}%")
                 
                 st.markdown("---")
                 
                 # SHAP可视化部分
-                st.markdown("### 🔬 影响因素分析")
+                st.markdown("### Local Feature Impact Analysis")
                 
-                # 创建两个选项卡：力图和决策图
-                shap_tab1, shap_tab2 = st.tabs(["单个特征影响", "决策过程追踪"])
+                #Create 2 fields
+                shap_tab1, shap_tab2 = st.tabs(["Local Feature Impact", "Decision "])
                 
                 with shap_tab1:
                     st.markdown("#### 各特征贡献度分析")
@@ -664,15 +626,14 @@ with tab3:
                     max_display=15,
                     show=False
                     )
-                    plt.title("特征贡献度瀑布图", fontsize=14, fontweight='bold')
+                    plt.title("SHAP Watefall Plot", fontsize=14, fontweight='bold')
                     plt.tight_layout()
                     st.pyplot(fig)
                     
                 
                 with shap_tab2:
-                    st.markdown("#### 决策过程可视化")
+                    st.markdown("#### Decision Visualization")
                     
-                    # 创建决策图
                     fig_decision, ax_decision = plt.subplots(figsize=(12, 6))
                     shap.decision_plot(
                         explainer.expected_value[1],
@@ -680,31 +641,17 @@ with tab3:
                         user_input.iloc[0],
                         feature_names=feature_names,
                         feature_order='importance',
-                        highlight=0,  # 高亮显示用户输入（第一个）
+                        highlight=0,  
                         show=False
                     )
-                    plt.title("决策路径分析", fontsize=12, fontweight='bold')
+                    plt.title("SHAP Decision Plot", fontsize=12, fontweight='bold')
                     plt.tight_layout()
                     st.pyplot(fig_decision)
                     
     
-    # 底部信息
     st.markdown("---")
     st.markdown("""
     <div style="text-align: center; color: #666; font-size: 0.9rem;">
-    <p>💧 注意：本分析基于机器学习模型预测，仅供参考。如有健康疑虑，请咨询专业机构。</p>
-    <p>数据更新频率：模型每月更新 | 最后更新：本月</p>
+    <p>Attention：System Analysis is base on AI model. It is intended for reference only.</p>
     </div>
     """, unsafe_allow_html=True)
-# ==================== 页脚 ====================
-st.markdown("---")
-st.markdown(
-    """
-    <div style="text-align: center; color: #666; padding: 20px;">
-        <p>💧 水质安全XAI解释系统 | 基于SHAP的模型可解释性分析</p>
-        <p>数据来源: Water Potability Dataset | 模型: Random Forest Classifier</p>
-        <p>© 2024 水质监管科技平台 | 版本 1.0.0</p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
