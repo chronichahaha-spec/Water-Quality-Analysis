@@ -129,7 +129,7 @@ def load_data_and_train():
         if col in df.columns:
             df[col] = df[col].fillna(df[col].mean())
     
-    feature_names = ['Sulfate', 'ph', 'Hardness', 'Chloramines', 'Solids',   
+    feature_names = ['ph', 'Hardness', 'Solids', 'Chloramines',  'Sulfate',  
                      'Conductivity', 'Organic_carbon', 'Trihalomethanes', 'Turbidity']
     
     X = df[feature_names].copy()
