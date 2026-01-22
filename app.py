@@ -346,8 +346,6 @@ with tab1:
                 st.write(f"**Standard Deviation**: {X_test[feature].std():.2f}")
                 st.write(f"**Range**: [{X_test[feature].min():.2f}, {X_test[feature].max():.2f}]")
                 st.write(f"**SHAP Variation (STD)**: {shap_std.get(feature, 0):.4f}")
-            
-            st.markdown('</div>', unsafe_allow_html=True)
 
 # ==================== Water Supplyment Company ====================
 with tab2:
