@@ -82,22 +82,22 @@ with st.sidebar:
     st.markdown("### XAI Explanation System Information")
     st.markdown("""
     **Model**: Random Forest  
-    **XAI Method**: SHAP DiCE 
-    **Data**: Water Potability Dataset from Kaggle
+    **XAI Method**: SHAP DiCE
+    **Data**: Water Potability Dataset
     """)
     
     st.markdown("---")
     st.markdown("### Feature Envolved In Model Prediction")
     st.markdown("""
-    - **PH
-    - **Hardness
-    - **Solids
-    - **Chloramines
-    - **Sulfate
-    - **Conductivity
-    - **Organic_carbon
-    - **Trihalomethanes
-    - **Turbidity
+    - **PH**
+    - **Hardness**
+    - **Solids**
+    - **Chloramines**
+    - **Sulfate**
+    - **Conductivity**
+    - **Organic_carbon**
+    - **Trihalomethanes**
+    - **Turbidity**
     """)
 
 # ==================== Load Data/Train Model ====================
