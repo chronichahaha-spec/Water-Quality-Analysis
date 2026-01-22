@@ -299,17 +299,17 @@ with tab1:
     if 'expand_all' not in st.session_state:
         st.session_state.expand_all = False
     
-    # 9个特征的依赖图
+    #SHAP Dependency Plot for 9 features
     feature_descriptions = {
-        'ph': '酸碱度是水质的基本指标，影响水处理效果和管道腐蚀。',
-        'Hardness': '硬度主要反映钙镁离子含量，过高会导致结垢问题。',
-        'Solids': '总溶解固体反映水中矿物质含量，影响口感和健康。',
-        'Chloramines': '消毒副产物，浓度需严格控制以保障安全。',
-        'Sulfate': '硫酸盐过高可能引起肠胃不适，需监测控制。',
-        'Conductivity': '电导率反映水中离子总量，间接指示污染程度。',
-        'Organic_carbon': '有机碳是微生物的营养源，过高可能滋生细菌。',
-        'Trihalomethanes': '重要消毒副产物，有潜在致癌风险。',
-        'Turbidity': '浊度反映水中悬浮物含量，影响消毒效果。'
+        'ph': 'acidity/alkalinity indicator',
+        'Hardness': 'primarily refers to calcium and magnesium ion levels',
+        'Solids': 'mineral content level',
+        'Chloramines': 'disinfection byproducts (DBPs)',
+        'Sulfate': 'industrial chemical pollutant',
+        'Conductivity': 'reflect ionic content level',
+        'Organic_carbon': 'nutrient source for microorganisms in water',
+        'Trihalomethanes': 'disinfection byproducts (DBPs)',
+        'Turbidity': 'reflect suspended solids content level'
     }
     
     #Create Folding Subfield for Each Features
