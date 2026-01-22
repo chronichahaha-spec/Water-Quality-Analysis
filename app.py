@@ -82,7 +82,9 @@ with st.sidebar:
     st.markdown("### XAI Explanation System Information")
     st.markdown("""
     **Model**: Random Forest  
+    
     **XAI Method**: SHAP DiCE
+    
     **Data**: Water Potability Dataset
     """)
     
