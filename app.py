@@ -255,7 +255,7 @@ with tab1:
     st.pyplot(fig1)
     
     #SHAP STD Plot
-    st.markdown('<div class="section-header">SHAP Standard Deviation Plot</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">2. SHAP Standard Deviation Plot</div>', unsafe_allow_html=True)
     st.markdown('<div class="warning-box">Higher STD Value implies Higher Feature Importance to Potability Prediction</div>', unsafe_allow_html=True)
     
     fig2, ax2 = plt.subplots(figsize=(12, 6))
@@ -276,7 +276,7 @@ with tab1:
         ax2.text(width + 0.002, bar.get_y() + bar.get_height()/2,
                 f'{value:.4f}', ha='left', va='center')
     
-    ax2.set_xlabel('2. SHAP Standard Deviation', fontsize=12)
+    ax2.set_xlabel('SHAP Standard Deviation', fontsize=12)
     ax2.set_title('Feature Importance Rank to Potability(Class 1)', fontsize=14, fontweight='bold')
     ax2.grid(axis='x', alpha=0.3, linestyle='--')
     plt.tight_layout()
