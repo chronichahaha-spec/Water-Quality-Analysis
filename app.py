@@ -487,7 +487,7 @@ with tab2:
                 
                   if get_dice:
                       st.markdown("### 🔄 DICE Counterfactual Advise")
-                      st.markdown('<div class="warning-box">基于反事实解释(CF)的水质处理优化建议，展示如何调整参数以达到水质安全标准。</div>', unsafe_allow_html=True)
+                      st.markdown('<div class="warning-box">DiCE demonstrates how minimal data perturbations can alter the original prediction.</div>', unsafe_allow_html=True)
                     
                       #DiCE Counterfactual Explanation
                       st.info("Generate Counterfactual Optimization Advise...")
