@@ -341,20 +341,11 @@ with tab1:
             
             with col_right:
                 # 显示特征统计信息
-                st.markdown("##### 特征统计")
-                st.write(f"**均值**: {X_test[feature].mean():.2f}")
-                st.write(f"**标准差**: {X_test[feature].std():.2f}")
-                st.write(f"**范围**: [{X_test[feature].min():.2f}, {X_test[feature].max():.2f}]")
-                st.write(f"**SHAP波动**: {shap_std.get(feature, 0):.4f}")
-                
-                # 监管建议
-                st.markdown("##### 监管建议")
-                if feature in ['Trihalomethanes', 'Chloramines']:
-                    st.info("需严格监控，定期检测")
-                elif feature in ['ph', 'Turbidity']:
-                    st.warning("需保持稳定，避免波动")
-                else:
-                    st.success("常规监测指标")
+                st.markdown("##### Feature Statistics")
+                st.write(f"**Mean Value**: {X_test[feature].mean():.2f}")
+                st.write(f"**Standard Deviation**: {X_test[feature].std():.2f}")
+                st.write(f"**Range**: [{X_test[feature].min():.2f}, {X_test[feature].max():.2f}]")
+                st.write(f"**SHAP Variation (STD)**: {shap_std.get(feature, 0):.4f}")
             
             st.markdown('</div>', unsafe_allow_html=True)
 
